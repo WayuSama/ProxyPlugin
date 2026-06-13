@@ -52,46 +52,51 @@ public sealed class ConfigWindow : Window, IDisposable
         ImGui.TextUnformatted("Network mode");
 
         if (DrawModeRadio("System proxy (follow OS, live)", NetworkMode.SystemProxy, s))
-            _config.Save();
+            OnModeChanged();
         if (DrawModeRadio("Manual proxy (http / socks5)", NetworkMode.ManualProxy, s))
-            _config.Save();
-        if (DrawModeRadio("No proxy (use built-in mirrors)", NetworkMode.NoProxy, s))
-            _config.Save();
+            OnModeChanged();
 
-        if (s.Mode == NetworkMode.ManualProxy)
+        // Proxy configuration block (shown for both proxy modes): the manual URL field only applies
+        // to manual mode, but the Test button stays visible in either proxy mode.
+        if (s.Mode is NetworkMode.SystemProxy or NetworkMode.ManualProxy)
         {
             ImGui.Indent();
-            ImGui.SetNextItemWidth(360);
-            if (ImGui.InputTextWithHint("##manualUrl", "http://127.0.0.1:7890 or socks5://127.0.0.1:1080", ref _manualUrlBuffer, 256))
+            if (s.Mode == NetworkMode.ManualProxy)
             {
-                s.ManualProxyUrl = _manualUrlBuffer;
-                _config.Save();
+                ImGui.SetNextItemWidth(360);
+                if (ImGui.InputTextWithHint("##manualUrl", "http://127.0.0.1:7890 or socks5://127.0.0.1:1080", ref _manualUrlBuffer, 256))
+                {
+                    s.ManualProxyUrl = _manualUrlBuffer;
+                    _config.Save();
+                }
+                ImGui.SameLine();
             }
-            ImGui.SameLine();
+
             if (ImGui.Button("Test"))
-                StartProxyTest(_manualUrlBuffer);
+                StartProxyTest();
             if (!string.IsNullOrEmpty(_testResult))
                 ImGui.TextUnformatted(_testResult);
             ImGui.Unindent();
         }
 
-        if (s.Mode is NetworkMode.SystemProxy or NetworkMode.ManualProxy)
-        {
-            bool overlay = s.OverlayMirrorInProxyModes;
-            if (ImGui.Checkbox("Also rewrite to mirrors in proxy mode (advanced)", ref overlay))
-            {
-                s.OverlayMirrorInProxyModes = overlay;
-                _config.Save();
-            }
-        }
+        // No-proxy sits below the proxy configuration block.
+        if (DrawModeRadio("No proxy (use built-in mirrors)", NetworkMode.NoProxy, s))
+            OnModeChanged();
 
         ImGui.Separator();
-        ImGui.TextUnformatted($"Force injection: {(_interceptor.ForceInjectionAvailable ? "available" : "DEGRADED (baseline only)")}");
         int activeRules = _ruleset.Rules.Count(r => r.Enabled);
         ImGui.TextUnformatted($"Mirror rules: {activeRules} active / {_ruleset.Rules.Count} total");
-        ImGui.TextUnformatted($"Effective upstream (github.com): {DescribeUpstream()}");
+        if (!_interceptor.ForceInjectionAvailable)
+            ImGui.TextColored(new Vector4(1f, 0.6f, 0.2f, 1f), "Forced proxy unavailable on this runtime (baseline mode).");
+        DrawMirrorRules();
 
         DrawLogTable();
+    }
+
+    private void OnModeChanged()
+    {
+        _testResult = "";
+        _config.Save();
     }
 
     private string DescribeUpstream()
@@ -117,37 +122,88 @@ public sealed class ConfigWindow : Window, IDisposable
         return false;
     }
 
+    private void DrawMirrorRules()
+    {
+        // Collapsed by default (no DefaultOpen flag).
+        if (!ImGui.CollapsingHeader("Mirror rules##rulesHeader"))
+            return;
+
+        if (!ImGui.BeginTable("##rules", 3,
+                ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY,
+                new Vector2(0, 140)))
+            return;
+
+        ImGui.TableSetupColumn("On", ImGuiTableColumnFlags.WidthFixed, 32);
+        ImGui.TableSetupColumn("Match", ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn("Target", ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableHeadersRow();
+
+        foreach (var r in _ruleset.Rules)
+        {
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn(); ImGui.TextUnformatted(r.Enabled ? "Y" : "-");
+            ImGui.TableNextColumn(); ImGui.TextUnformatted(r.MatchHost + (r.MatchPathPrefix ?? ""));
+            ImGui.TableNextColumn(); ImGui.TextUnformatted(r.TargetHost + (r.TargetPathPrefix ?? ""));
+        }
+
+        ImGui.EndTable();
+    }
+
     private void DrawLogTable()
     {
         ImGui.Spacing();
         ImGui.TextUnformatted("Recent requests");
-        if (!ImGui.BeginTable("##log", 4, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY))
+        if (!ImGui.BeginTable("##log", 5, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY))
             return;
 
-        ImGui.TableSetupColumn("Time", ImGuiTableColumnFlags.WidthFixed, 70);
-        ImGui.TableSetupColumn("Host", ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn("Time", ImGuiTableColumnFlags.WidthFixed, 64);
+        ImGui.TableSetupColumn("URL", ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableSetupColumn("Flags", ImGuiTableColumnFlags.WidthFixed, 110);
-        ImGui.TableSetupColumn("Result", ImGuiTableColumnFlags.WidthFixed, 140);
+        ImGui.TableSetupColumn("Result", ImGuiTableColumnFlags.WidthFixed, 56);
+        ImGui.TableSetupColumn("ms", ImGuiTableColumnFlags.WidthFixed, 56);
         ImGui.TableHeadersRow();
 
         foreach (var e in _log.Snapshot())
         {
             ImGui.TableNextRow();
             ImGui.TableNextColumn(); ImGui.TextUnformatted(e.TimestampUtc.ToLocalTime().ToString("HH:mm:ss"));
-            ImGui.TableNextColumn(); ImGui.TextUnformatted(e.Host);
-            ImGui.TableNextColumn(); ImGui.TextUnformatted($"{(e.Rewritten ? "R" : "-")}{(e.Proxied ? "P" : "-")}");
-            ImGui.TableNextColumn(); ImGui.TextUnformatted(e.Result);
+            ImGui.TableNextColumn(); ImGui.TextUnformatted(e.FinalUrl);
+            ImGui.TableNextColumn(); ImGui.TextUnformatted(DescribeFlags(e));
+            ImGui.TableNextColumn(); ImGui.TextUnformatted(e.StatusCode > 0 ? e.StatusCode.ToString() : "ERR");
+            ImGui.TableNextColumn(); ImGui.TextUnformatted(e.ElapsedMs.ToString());
         }
 
         ImGui.EndTable();
     }
 
-    private void StartProxyTest(string url)
+    private static string DescribeFlags(RequestLogEntry e) => (e.Rewritten, e.Proxied) switch
     {
-        if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        (true, true) => "Rewrite, Proxy",
+        (true, false) => "Rewrite",
+        (false, true) => "Proxy",
+        _ => "direct",
+    };
+
+    private void StartProxyTest()
+    {
+        IWebProxy testProxy;
+        string target;
+
+        if (_config.Settings.Mode == NetworkMode.ManualProxy)
         {
-            _testResult = "Invalid URL";
-            return;
+            if (string.IsNullOrWhiteSpace(_manualUrlBuffer) || !Uri.TryCreate(_manualUrlBuffer, UriKind.Absolute, out var uri))
+            {
+                _testResult = "Invalid URL";
+                return;
+            }
+            testProxy = new WebProxy(uri);
+            target = uri.ToString();
+        }
+        else
+        {
+            // System mode: probe through whatever DynamicProxy resolves right now (system proxy or direct).
+            testProxy = _proxy;
+            target = DescribeUpstream();
         }
 
         _testResult = "Testing...";
@@ -156,13 +212,13 @@ public sealed class ConfigWindow : Window, IDisposable
         {
             try
             {
-                using var handler = new SocketsHttpHandler { Proxy = new WebProxy(uri), UseProxy = true };
+                using var handler = new SocketsHttpHandler { Proxy = testProxy, UseProxy = true };
                 using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
                 var req = new HttpRequestMessage(HttpMethod.Head, "https://www.gstatic.com/generate_204");
                 // Mark as hands-off so our own interceptor does not redirect the probe.
                 req.Options.Set(new HttpRequestOptionsKey<bool>("ProxyPlugin.NoRewrite"), true);
                 using var resp = client.Send(req);
-                _testResult = $"OK ({(int)resp.StatusCode})";
+                _testResult = $"OK ({(int)resp.StatusCode}) via {target}";
             }
             catch (Exception ex)
             {

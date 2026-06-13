@@ -209,7 +209,7 @@ public sealed class HttpInterceptor : IDisposable
     }
 
     private static bool ShouldRewrite(ProxySettings settings)
-        => settings.Mode == NetworkMode.NoProxy || settings.OverlayMirrorInProxyModes;
+        => settings.Mode == NetworkMode.NoProxy;
 
     private void TryInject(object handler)
     {
@@ -258,12 +258,12 @@ public sealed class HttpInterceptor : IDisposable
                     var originResp = await _fallbackClient
                         .SendAsync(clone, HttpCompletionOption.ResponseHeadersRead)
                         .ConfigureAwait(false);
-                    Log(originalUri!, originalUri!, false, proxied, "fallback", sw.ElapsedMilliseconds);
+                    Log(originalUri!, originalUri!, false, proxied, (int)originResp.StatusCode, "fallback", sw.ElapsedMilliseconds);
                     return originResp;
                 }
                 catch
                 {
-                    Log(originalUri!, originalUri!, false, proxied, "fallback-failed", sw.ElapsedMilliseconds);
+                    Log(originalUri!, originalUri!, false, proxied, 0, "fallback-failed", sw.ElapsedMilliseconds);
                     throw;
                 }
                 finally
@@ -278,7 +278,8 @@ public sealed class HttpInterceptor : IDisposable
 
         var final = finalUri ?? request.RequestUri!;
         var original = originalUri ?? final;
-        Log(original, final, rewritten, proxied, error != null ? "failed" : "ok", sw.ElapsedMilliseconds);
+        var statusCode = response != null ? (int)response.StatusCode : 0;
+        Log(original, final, rewritten, proxied, statusCode, error != null ? "failed" : "ok", sw.ElapsedMilliseconds);
 
         if (error != null)
             ExceptionDispatchInfo.Capture(error).Throw();
@@ -294,7 +295,7 @@ public sealed class HttpInterceptor : IDisposable
         catch { return false; }
     }
 
-    private void Log(Uri original, Uri final, bool rewritten, bool proxied, string result, long elapsedMs)
+    private void Log(Uri original, Uri final, bool rewritten, bool proxied, int statusCode, string result, long elapsedMs)
     {
         try
         {
@@ -305,6 +306,7 @@ public sealed class HttpInterceptor : IDisposable
                 FinalUrl = final.ToString(),
                 Rewritten = rewritten,
                 Proxied = proxied,
+                StatusCode = statusCode,
                 Result = result,
                 ElapsedMs = elapsedMs,
             });

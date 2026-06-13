@@ -8,6 +8,10 @@ public sealed class RequestLogEntry
     public string FinalUrl { get; set; } = "";
     public bool Rewritten { get; set; }
     public bool Proxied { get; set; }
+
+    /// <summary>HTTP status code of the final response, or 0 when the request never produced one (transport failure).</summary>
+    public int StatusCode { get; set; }
+
     public string Result { get; set; } = "";
     public long ElapsedMs { get; set; }
 }
