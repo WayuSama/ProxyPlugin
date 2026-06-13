@@ -13,7 +13,7 @@ public static class RewriteEngine
             var rule = rules[i];
             if (!rule.Enabled)
                 continue;
-            if (string.IsNullOrEmpty(rule.MatchHost) || string.IsNullOrEmpty(rule.TargetHost))
+            if (string.IsNullOrWhiteSpace(rule.MatchHost) || string.IsNullOrWhiteSpace(rule.TargetHost))
                 continue;
             if (!string.Equals(input.Host, rule.MatchHost, StringComparison.OrdinalIgnoreCase))
                 continue;

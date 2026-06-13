@@ -17,6 +17,9 @@ public sealed class MirrorRuleset
 
     public static MirrorRuleset FromJson(string json)
     {
+        if (string.IsNullOrWhiteSpace(json))
+            return new MirrorRuleset(new List<MirrorRule>());
+
         List<MirrorRule> valid = new();
         try
         {
