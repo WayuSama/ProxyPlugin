@@ -39,6 +39,10 @@ public sealed class Plugin : IDalamudPlugin
 
     public Plugin()
     {
+        // Must run before any Harmony type is touched (i.e. before HttpInterceptor below): hosts
+        // 0Harmony in the non-collectible Default ALC so MonoMod can operate. See HarmonyLoader.
+        HarmonyLoader.EnsureLoaded(PluginInterface.AssemblyLocation.DirectoryName!);
+
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
         _requestLog = new RequestLog();
