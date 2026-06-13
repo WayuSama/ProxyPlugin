@@ -12,6 +12,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ProxyPlugin.Core\ProxyPlugin.Core.csproj" />
+    <!-- Dalamud 15 does not bundle Harmony; ship our own merged 0Harmony.dll. -->
+    <PackageReference Include="Lib.Harmony" Version="2.4.2" />
   </ItemGroup>
 
   <ItemGroup>
