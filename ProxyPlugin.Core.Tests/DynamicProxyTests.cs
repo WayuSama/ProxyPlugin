@@ -77,4 +77,35 @@ public class DynamicProxyTests
         reader.Proxy = new WebProxy("http://10.0.0.1:8080");
         Assert.Equal(new Uri("http://10.0.0.1:8080"), p.GetProxy(Dest));
     }
+
+    [Fact]
+    public void SystemMode_IsBypassed_WhenReaderReturnsNull()
+    {
+        var settings = new ProxySettings { Mode = NetworkMode.SystemProxy };
+        var reader = new FakeReader { Proxy = null };
+        var p = new DynamicProxy(() => settings, reader);
+        Assert.True(p.IsBypassed(Dest));
+
+        reader.Proxy = new WebProxy("http://10.0.0.1:8080");
+        Assert.False(p.IsBypassed(Dest));
+    }
+
+    [Fact]
+    public void ManualMode_Loopback_GetProxyReturnsNull()
+    {
+        var settings = new ProxySettings { Mode = NetworkMode.ManualProxy, ManualProxyUrl = "http://127.0.0.1:7890" };
+        var p = new DynamicProxy(() => settings, new FakeReader());
+        Assert.Null(p.GetProxy(new Uri("http://127.0.0.1:5000/api")));
+    }
+
+    [Fact]
+    public void ManualMode_ReResolvesWhenUrlChanges()
+    {
+        var settings = new ProxySettings { Mode = NetworkMode.ManualProxy, ManualProxyUrl = "http://127.0.0.1:7890" };
+        var p = new DynamicProxy(() => settings, new FakeReader());
+        Assert.Equal(new Uri("http://127.0.0.1:7890"), p.GetProxy(Dest));
+        Assert.Equal(new Uri("http://127.0.0.1:7890"), p.GetProxy(Dest)); // cache hit, same result
+        settings.ManualProxyUrl = "http://10.0.0.2:3128";
+        Assert.Equal(new Uri("http://10.0.0.2:3128"), p.GetProxy(Dest)); // cache invalidated on url change
+    }
 }
