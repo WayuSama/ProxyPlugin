@@ -59,7 +59,7 @@ public sealed class Plugin : IDalamudPlugin
         _watcher = new SystemProxyWatcher(_systemReader.Invalidate, logger);
         _watcher.Start();
 
-        _configWindow = new ConfigWindow(this, _requestLog, _interceptor);
+        _configWindow = new ConfigWindow(this, _requestLog, _interceptor, _ruleset, _proxy);
         _windowSystem.AddWindow(_configWindow);
 
         PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
@@ -84,6 +84,10 @@ public sealed class Plugin : IDalamudPlugin
 
         _watcher.Dispose();
         _interceptor.Dispose();
+
+        // Force any handler that already had DynamicProxy reflected into its built chain to
+        // resolve direct, so disabling the plugin stops all interception even for live handlers.
+        _proxy.Shutdown();
 
         HttpClient.DefaultProxy = _previousDefaultProxy ?? new WebProxy();
         WebRequest.DefaultWebProxy = _previousWebRequestProxy;

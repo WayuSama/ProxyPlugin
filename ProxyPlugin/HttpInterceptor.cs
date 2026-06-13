@@ -28,7 +28,7 @@ public sealed class HttpInterceptor : IDisposable
     // Marks fallback retries so we never rewrite/wrap them again (re-entry guard).
     private static readonly HttpRequestOptionsKey<bool> NoRewriteKey = new("ProxyPlugin.NoRewrite");
 
-    private static HttpInterceptor? _active;
+    private static volatile HttpInterceptor? _active;
 
     private readonly Harmony _harmony = new(HarmonyId);
     private readonly DynamicProxy _proxy;
@@ -38,6 +38,7 @@ public sealed class HttpInterceptor : IDisposable
     private readonly Func<ProxySettings> _settingsProvider;
     private readonly IInterceptorLog _logger;
     private readonly HttpClient _fallbackClient;
+    private int _fallbackInFlight;
 
     private PropertyInfo? _settingsProp;
     private FieldInfo? _proxyField;
@@ -155,13 +156,25 @@ public sealed class HttpInterceptor : IDisposable
         if (self == null || __result == null)
             return;
 
-        // Fallback retries are pre-marked; do not wrap/log them twice.
-        if (request.Options.TryGetValue(NoRewriteKey, out var skip) && skip)
-            return;
+        try
+        {
+            // Master switch off: do not wrap or log; leave the caller's task untouched.
+            if (!self._settingsProvider().Enabled)
+                return;
 
-        request.Options.TryGetValue(OriginalUriKey, out var originalUri);
-        var inner = __result;
-        __result = self.WrapAsync(request, originalUri, inner);
+            // Fallback retries / self-issued requests are pre-marked; do not wrap/log them twice.
+            if (request.Options.TryGetValue(NoRewriteKey, out var skip) && skip)
+                return;
+
+            request.Options.TryGetValue(OriginalUriKey, out var originalUri);
+            var inner = __result;
+            __result = self.WrapAsync(request, originalUri, inner);
+        }
+        catch (Exception ex)
+        {
+            // Interception must never break the caller; leave __result unchanged.
+            self._logger.Error(ex, "ProxyPlugin: SendAsync postfix failed.");
+        }
     }
 
     // ---- Core logic ----
@@ -239,18 +252,23 @@ public sealed class HttpInterceptor : IDisposable
                 response?.Dispose();
                 clone.Options.Set(NoRewriteKey, true);
                 sw.Restart();
+                Interlocked.Increment(ref _fallbackInFlight);
                 try
                 {
                     var originResp = await _fallbackClient
                         .SendAsync(clone, HttpCompletionOption.ResponseHeadersRead)
                         .ConfigureAwait(false);
-                    Log(originalUri!, originalUri!, true, proxied, "fallback", sw.ElapsedMilliseconds);
+                    Log(originalUri!, originalUri!, false, proxied, "fallback", sw.ElapsedMilliseconds);
                     return originResp;
                 }
                 catch
                 {
-                    Log(originalUri!, originalUri!, true, proxied, "fallback-failed", sw.ElapsedMilliseconds);
+                    Log(originalUri!, originalUri!, false, proxied, "fallback-failed", sw.ElapsedMilliseconds);
                     throw;
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref _fallbackInFlight);
                 }
             }
         }
@@ -299,9 +317,17 @@ public sealed class HttpInterceptor : IDisposable
 
     public void Dispose()
     {
+        // Stop accepting new interception first so no new fallback can start.
         _active = null;
         try { _harmony.UnpatchAll(HarmonyId); }
         catch (Exception ex) { _logger.Error(ex, "ProxyPlugin: Harmony unpatch failed."); }
+
+        // Best-effort drain of in-flight fallbacks so disposing the client does not surface
+        // ObjectDisposedException into an unrelated caller's request.
+        var deadline = Environment.TickCount64 + 1500;
+        while (Volatile.Read(ref _fallbackInFlight) > 0 && Environment.TickCount64 < deadline)
+            Thread.Sleep(10);
+
         _fallbackClient.Dispose();
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Numerics;
@@ -11,18 +12,24 @@ namespace ProxyPlugin.Windows;
 
 public sealed class ConfigWindow : Window, IDisposable
 {
+    private static readonly Uri SampleDestination = new("https://github.com/");
+
     private readonly Configuration _config;
     private readonly RequestLog _log;
     private readonly HttpInterceptor _interceptor;
+    private readonly MirrorRuleset _ruleset;
+    private readonly DynamicProxy _proxy;
     private string _manualUrlBuffer;
-    private string _testResult = "";
+    private volatile string _testResult = "";
 
-    public ConfigWindow(Plugin plugin, RequestLog log, HttpInterceptor interceptor)
+    public ConfigWindow(Plugin plugin, RequestLog log, HttpInterceptor interceptor, MirrorRuleset ruleset, DynamicProxy proxy)
         : base("ProxyPlugin Settings###ProxyPluginConfig")
     {
         _config = plugin.Configuration;
         _log = log;
         _interceptor = interceptor;
+        _ruleset = ruleset;
+        _proxy = proxy;
         _manualUrlBuffer = _config.Settings.ManualProxyUrl ?? "";
         Size = new Vector2(560, 480);
         SizeCondition = ImGuiCond.FirstUseEver;
@@ -80,8 +87,23 @@ public sealed class ConfigWindow : Window, IDisposable
 
         ImGui.Separator();
         ImGui.TextUnformatted($"Force injection: {(_interceptor.ForceInjectionAvailable ? "available" : "DEGRADED (baseline only)")}");
+        int activeRules = _ruleset.Rules.Count(r => r.Enabled);
+        ImGui.TextUnformatted($"Mirror rules: {activeRules} active / {_ruleset.Rules.Count} total");
+        ImGui.TextUnformatted($"Effective upstream (github.com): {DescribeUpstream()}");
 
         DrawLogTable();
+    }
+
+    private string DescribeUpstream()
+    {
+        try
+        {
+            return _proxy.GetProxy(SampleDestination)?.ToString() ?? "direct";
+        }
+        catch (Exception ex)
+        {
+            return $"error: {ex.Message}";
+        }
     }
 
     private static bool DrawModeRadio(string label, NetworkMode mode, ProxySettings s)
