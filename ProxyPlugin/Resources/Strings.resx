@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="window.title" xml:space="preserve">
+    <value>ProxyPlugin Settings</value>
+  </data>
+  <data name="lang.label" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="lang.auto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="lang.english" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="lang.chinese" xml:space="preserve">
+    <value>中文</value>
+  </data>
+  <data name="enable" xml:space="preserve">
+    <value>Enable ProxyPlugin</value>
+  </data>
+  <data name="mode.header" xml:space="preserve">
+    <value>Network mode</value>
+  </data>
+  <data name="mode.system" xml:space="preserve">
+    <value>System proxy (follow OS, live)</value>
+  </data>
+  <data name="mode.manual" xml:space="preserve">
+    <value>Manual proxy (http / socks5)</value>
+  </data>
+  <data name="mode.none" xml:space="preserve">
+    <value>No proxy (use built-in mirrors)</value>
+  </data>
+  <data name="manual.hint" xml:space="preserve">
+    <value>http://127.0.0.1:7890 or socks5://127.0.0.1:1080</value>
+  </data>
+  <data name="test" xml:space="preserve">
+    <value>Test</value>
+  </data>
+  <data name="test.invalid" xml:space="preserve">
+    <value>Invalid URL</value>
+  </data>
+  <data name="test.testing" xml:space="preserve">
+    <value>Testing...</value>
+  </data>
+  <data name="test.ok" xml:space="preserve">
+    <value>OK ({0}) via {1}</value>
+  </data>
+  <data name="test.failed" xml:space="preserve">
+    <value>Failed: {0}</value>
+  </data>
+  <data name="mirror.count" xml:space="preserve">
+    <value>Mirror rules: {0} active / {1} total</value>
+  </data>
+  <data name="force.degraded" xml:space="preserve">
+    <value>Forced proxy unavailable on this runtime (baseline mode).</value>
+  </data>
+  <data name="mirror.header" xml:space="preserve">
+    <value>Mirror rules</value>
+  </data>
+  <data name="mirror.col.on" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="mirror.col.match" xml:space="preserve">
+    <value>Match</value>
+  </data>
+  <data name="mirror.col.target" xml:space="preserve">
+    <value>Target</value>
+  </data>
+  <data name="log.header" xml:space="preserve">
+    <value>Recent requests</value>
+  </data>
+  <data name="log.col.time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="log.col.url" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="log.col.flags" xml:space="preserve">
+    <value>Flags</value>
+  </data>
+  <data name="log.col.code" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="log.col.ms" xml:space="preserve">
+    <value>ms</value>
+  </data>
+  <data name="flag.rewriteProxy" xml:space="preserve">
+    <value>Rewrite, Proxy</value>
+  </data>
+  <data name="flag.rewrite" xml:space="preserve">
+    <value>Rewrite</value>
+  </data>
+  <data name="flag.proxy" xml:space="preserve">
+    <value>Proxy</value>
+  </data>
+  <data name="flag.direct" xml:space="preserve">
+    <value>direct</value>
+  </data>
+  <data name="upstream.direct" xml:space="preserve">
+    <value>direct</value>
+  </data>
+  <data name="upstream.error" xml:space="preserve">
+    <value>error: {0}</value>
+  </data>
+  <data name="mirror.yes" xml:space="preserve">
+    <value>Y</value>
+  </data>
+  <data name="log.err" xml:space="preserve">
+    <value>ERR</value>
+  </data>
+  <data name="cmd.help" xml:space="preserve">
+    <value>Open ProxyPlugin settings.</value>
+  </data>
+</root>

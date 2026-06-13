@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -10,6 +10,7 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using ProxyPlugin.Core;
+using ProxyPlugin.Localization;
 using ProxyPlugin.Windows;
 
 namespace ProxyPlugin;
@@ -44,6 +45,7 @@ public sealed class Plugin : IDalamudPlugin
         HarmonyLoader.EnsureLoaded(PluginInterface.AssemblyLocation.DirectoryName!);
 
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        Loc.Apply(Configuration.Language, PluginInterface.UiLanguage);
 
         _requestLog = new RequestLog();
         _health = new MirrorHealth(new SystemClock());
@@ -69,10 +71,11 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUi;
         PluginInterface.UiBuilder.OpenMainUi += ToggleConfigUi;
+        PluginInterface.LanguageChanged += OnUiLanguageChanged;
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Open ProxyPlugin settings.",
+            HelpMessage = Loc.T("cmd.help"),
         });
 
         Log.Information($"ProxyPlugin loaded. Rules: {_ruleset.Rules.Count}, ForceInjection: {_interceptor.ForceInjectionAvailable}");
@@ -84,6 +87,7 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.Draw -= _windowSystem.Draw;
         PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUi;
         PluginInterface.UiBuilder.OpenMainUi -= ToggleConfigUi;
+        PluginInterface.LanguageChanged -= OnUiLanguageChanged;
         _windowSystem.RemoveAllWindows();
 
         _watcher.Dispose();
@@ -116,4 +120,7 @@ public sealed class Plugin : IDalamudPlugin
     private void OnCommand(string command, string args) => ToggleConfigUi();
 
     private void ToggleConfigUi() => _configWindow.Toggle();
+
+    // Re-resolve strings when Dalamud's UI language changes (only matters while in Auto mode).
+    private void OnUiLanguageChanged(string langCode) => Loc.Apply(Configuration.Language, langCode);
 }

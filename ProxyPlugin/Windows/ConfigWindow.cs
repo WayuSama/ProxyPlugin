@@ -7,12 +7,16 @@ using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
 using ProxyPlugin.Core;
+using ProxyPlugin.Localization;
 
 namespace ProxyPlugin.Windows;
 
 public sealed class ConfigWindow : Window, IDisposable
 {
     private static readonly Uri SampleDestination = new("https://github.com/");
+
+    private static readonly UiLanguage[] LanguageOptions =
+        { UiLanguage.Auto, UiLanguage.English, UiLanguage.ChineseSimplified };
 
     private readonly Configuration _config;
     private readonly RequestLog _log;
@@ -39,21 +43,27 @@ public sealed class ConfigWindow : Window, IDisposable
 
     public override void Draw()
     {
+        // Keep the title localized while preserving a stable ImGui id (the part after ###).
+        WindowName = Loc.T("window.title") + "###ProxyPluginConfig";
+
         var s = _config.Settings;
 
+        DrawLanguageSelector();
+        ImGui.Separator();
+
         bool enabled = s.Enabled;
-        if (ImGui.Checkbox("Enable ProxyPlugin", ref enabled))
+        if (ImGui.Checkbox(Loc.T("enable"), ref enabled))
         {
             s.Enabled = enabled;
             _config.Save();
         }
 
         ImGui.Separator();
-        ImGui.TextUnformatted("Network mode");
+        ImGui.TextUnformatted(Loc.T("mode.header"));
 
-        if (DrawModeRadio("System proxy (follow OS, live)", NetworkMode.SystemProxy, s))
+        if (DrawModeRadio(Loc.T("mode.system"), NetworkMode.SystemProxy, s))
             OnModeChanged();
-        if (DrawModeRadio("Manual proxy (http / socks5)", NetworkMode.ManualProxy, s))
+        if (DrawModeRadio(Loc.T("mode.manual"), NetworkMode.ManualProxy, s))
             OnModeChanged();
 
         // Proxy configuration block (shown for both proxy modes): the manual URL field only applies
@@ -64,7 +74,7 @@ public sealed class ConfigWindow : Window, IDisposable
             if (s.Mode == NetworkMode.ManualProxy)
             {
                 ImGui.SetNextItemWidth(360);
-                if (ImGui.InputTextWithHint("##manualUrl", "http://127.0.0.1:7890 or socks5://127.0.0.1:1080", ref _manualUrlBuffer, 256))
+                if (ImGui.InputTextWithHint("##manualUrl", Loc.T("manual.hint"), ref _manualUrlBuffer, 256))
                 {
                     s.ManualProxyUrl = _manualUrlBuffer;
                     _config.Save();
@@ -72,26 +82,53 @@ public sealed class ConfigWindow : Window, IDisposable
                 ImGui.SameLine();
             }
 
-            if (ImGui.Button("Test"))
+            if (ImGui.Button(Loc.T("test")))
                 StartProxyTest();
             if (!string.IsNullOrEmpty(_testResult))
                 ImGui.TextUnformatted(_testResult);
             ImGui.Unindent();
         }
 
-        // No-proxy sits below the proxy configuration block.
-        if (DrawModeRadio("No proxy (use built-in mirrors)", NetworkMode.NoProxy, s))
+        if (DrawModeRadio(Loc.T("mode.none"), NetworkMode.NoProxy, s))
             OnModeChanged();
 
         ImGui.Separator();
         int activeRules = _ruleset.Rules.Count(r => r.Enabled);
-        ImGui.TextUnformatted($"Mirror rules: {activeRules} active / {_ruleset.Rules.Count} total");
+        ImGui.TextUnformatted(Loc.T("mirror.count", activeRules, _ruleset.Rules.Count));
         if (!_interceptor.ForceInjectionAvailable)
-            ImGui.TextColored(new Vector4(1f, 0.6f, 0.2f, 1f), "Forced proxy unavailable on this runtime (baseline mode).");
+            ImGui.TextColored(new Vector4(1f, 0.6f, 0.2f, 1f), Loc.T("force.degraded"));
         DrawMirrorRules();
 
         DrawLogTable();
     }
+
+    private void DrawLanguageSelector()
+    {
+        ImGui.TextUnformatted(Loc.T("lang.label"));
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(160);
+        if (!ImGui.BeginCombo("##lang", LanguageLabel(_config.Language)))
+            return;
+
+        foreach (var lang in LanguageOptions)
+        {
+            if (ImGui.Selectable(LanguageLabel(lang), lang == _config.Language) && lang != _config.Language)
+            {
+                _config.Language = lang;
+                Loc.Apply(lang, Plugin.PluginInterface.UiLanguage);
+                _config.Save();
+            }
+        }
+
+        ImGui.EndCombo();
+    }
+
+    private static string LanguageLabel(UiLanguage lang) => lang switch
+    {
+        UiLanguage.English => Loc.T("lang.english"),
+        UiLanguage.ChineseSimplified => Loc.T("lang.chinese"),
+        _ => Loc.T("lang.auto"),
+    };
 
     private void OnModeChanged()
     {
@@ -103,11 +140,11 @@ public sealed class ConfigWindow : Window, IDisposable
     {
         try
         {
-            return _proxy.GetProxy(SampleDestination)?.ToString() ?? "direct";
+            return _proxy.GetProxy(SampleDestination)?.ToString() ?? Loc.T("upstream.direct");
         }
         catch (Exception ex)
         {
-            return $"error: {ex.Message}";
+            return Loc.T("upstream.error", ex.Message);
         }
     }
 
@@ -124,8 +161,7 @@ public sealed class ConfigWindow : Window, IDisposable
 
     private void DrawMirrorRules()
     {
-        // Collapsed by default (no DefaultOpen flag).
-        if (!ImGui.CollapsingHeader("Mirror rules##rulesHeader"))
+        if (!ImGui.CollapsingHeader(Loc.T("mirror.header") + "##rulesHeader"))
             return;
 
         if (!ImGui.BeginTable("##rules", 3,
@@ -133,15 +169,15 @@ public sealed class ConfigWindow : Window, IDisposable
                 new Vector2(0, 140)))
             return;
 
-        ImGui.TableSetupColumn("On", ImGuiTableColumnFlags.WidthFixed, 32);
-        ImGui.TableSetupColumn("Match", ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("Target", ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn(Loc.T("mirror.col.on"), ImGuiTableColumnFlags.WidthFixed, 40);
+        ImGui.TableSetupColumn(Loc.T("mirror.col.match"), ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn(Loc.T("mirror.col.target"), ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableHeadersRow();
 
         foreach (var r in _ruleset.Rules)
         {
             ImGui.TableNextRow();
-            ImGui.TableNextColumn(); ImGui.TextUnformatted(r.Enabled ? "Y" : "-");
+            ImGui.TableNextColumn(); ImGui.TextUnformatted(r.Enabled ? Loc.T("mirror.yes") : "-");
             ImGui.TableNextColumn(); ImGui.TextUnformatted(r.MatchHost + (r.MatchPathPrefix ?? ""));
             ImGui.TableNextColumn(); ImGui.TextUnformatted(r.TargetHost + (r.TargetPathPrefix ?? ""));
         }
@@ -152,15 +188,15 @@ public sealed class ConfigWindow : Window, IDisposable
     private void DrawLogTable()
     {
         ImGui.Spacing();
-        ImGui.TextUnformatted("Recent requests");
+        ImGui.TextUnformatted(Loc.T("log.header"));
         if (!ImGui.BeginTable("##log", 5, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY))
             return;
 
-        ImGui.TableSetupColumn("Time", ImGuiTableColumnFlags.WidthFixed, 64);
-        ImGui.TableSetupColumn("URL", ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn("Flags", ImGuiTableColumnFlags.WidthFixed, 110);
-        ImGui.TableSetupColumn("Result", ImGuiTableColumnFlags.WidthFixed, 56);
-        ImGui.TableSetupColumn("ms", ImGuiTableColumnFlags.WidthFixed, 56);
+        ImGui.TableSetupColumn(Loc.T("log.col.time"), ImGuiTableColumnFlags.WidthFixed, 64);
+        ImGui.TableSetupColumn(Loc.T("log.col.url"), ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn(Loc.T("log.col.flags"), ImGuiTableColumnFlags.WidthFixed, 110);
+        ImGui.TableSetupColumn(Loc.T("log.col.code"), ImGuiTableColumnFlags.WidthFixed, 56);
+        ImGui.TableSetupColumn(Loc.T("log.col.ms"), ImGuiTableColumnFlags.WidthFixed, 56);
         ImGui.TableHeadersRow();
 
         foreach (var e in _log.Snapshot())
@@ -169,7 +205,7 @@ public sealed class ConfigWindow : Window, IDisposable
             ImGui.TableNextColumn(); ImGui.TextUnformatted(e.TimestampUtc.ToLocalTime().ToString("HH:mm:ss"));
             ImGui.TableNextColumn(); ImGui.TextUnformatted(e.FinalUrl);
             ImGui.TableNextColumn(); ImGui.TextUnformatted(DescribeFlags(e));
-            ImGui.TableNextColumn(); ImGui.TextUnformatted(e.StatusCode > 0 ? e.StatusCode.ToString() : "ERR");
+            ImGui.TableNextColumn(); ImGui.TextUnformatted(e.StatusCode > 0 ? e.StatusCode.ToString() : Loc.T("log.err"));
             ImGui.TableNextColumn(); ImGui.TextUnformatted(e.ElapsedMs.ToString());
         }
 
@@ -178,10 +214,10 @@ public sealed class ConfigWindow : Window, IDisposable
 
     private static string DescribeFlags(RequestLogEntry e) => (e.Rewritten, e.Proxied) switch
     {
-        (true, true) => "Rewrite, Proxy",
-        (true, false) => "Rewrite",
-        (false, true) => "Proxy",
-        _ => "direct",
+        (true, true) => Loc.T("flag.rewriteProxy"),
+        (true, false) => Loc.T("flag.rewrite"),
+        (false, true) => Loc.T("flag.proxy"),
+        _ => Loc.T("flag.direct"),
     };
 
     private void StartProxyTest()
@@ -193,7 +229,7 @@ public sealed class ConfigWindow : Window, IDisposable
         {
             if (string.IsNullOrWhiteSpace(_manualUrlBuffer) || !Uri.TryCreate(_manualUrlBuffer, UriKind.Absolute, out var uri))
             {
-                _testResult = "Invalid URL";
+                _testResult = Loc.T("test.invalid");
                 return;
             }
             testProxy = new WebProxy(uri);
@@ -206,7 +242,7 @@ public sealed class ConfigWindow : Window, IDisposable
             target = DescribeUpstream();
         }
 
-        _testResult = "Testing...";
+        _testResult = Loc.T("test.testing");
         // Run off the render thread so the game UI never freezes during the probe.
         _ = Task.Run(() =>
         {
@@ -216,13 +252,13 @@ public sealed class ConfigWindow : Window, IDisposable
                 using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
                 var req = new HttpRequestMessage(HttpMethod.Head, "https://www.gstatic.com/generate_204");
                 // Mark as hands-off so our own interceptor does not redirect the probe.
-                req.Options.Set(new HttpRequestOptionsKey<bool>("ProxyPlugin.NoRewrite"), true);
+                req.Options.Set(HttpInterceptor.NoRewriteKey, true);
                 using var resp = client.Send(req);
-                _testResult = $"OK ({(int)resp.StatusCode}) via {target}";
+                _testResult = Loc.T("test.ok", (int)resp.StatusCode, target);
             }
             catch (Exception ex)
             {
-                _testResult = $"Failed: {ex.Message}";
+                _testResult = Loc.T("test.failed", ex.Message);
             }
         });
     }
