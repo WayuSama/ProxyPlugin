@@ -1,12 +1,14 @@
 {
   "Author": "your name here",
-  "Name": "Sample Plugin",
-  "Punchline": "A short one-liner that shows up in /xlplugins.",
-  "Description": "A description that shows up in /xlplugins. List any major slash-command(s).",
+  "Name": "ProxyPlugin",
+  "InternalName": "ProxyPlugin",
+  "Punchline": "Route other plugins' traffic through your proxy, or accelerate via mirrors.",
+  "Description": "Forces in-process plugin HTTP/WebSocket traffic through a system/manual proxy, or rewrites whitelisted static-resource URLs to built-in mirrors with automatic origin fallback. Command: /proxyplugin.",
   "ApplicableVersion": "any",
+  "LoadPriority": 1000,
   "Tags": [
-    "sample",
-    "plugin",
-    "goats"
+    "proxy",
+    "mirror",
+    "network"
   ]
 }
