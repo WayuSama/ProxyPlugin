@@ -25,8 +25,9 @@ public sealed class HttpInterceptor : IDisposable
     // Marks the rewritten origin so the fallback path can restore it.
     private static readonly HttpRequestOptionsKey<Uri> OriginalUriKey = new("ProxyPlugin.OriginalUri");
 
-    // Marks fallback retries so we never rewrite/wrap them again (re-entry guard).
-    private static readonly HttpRequestOptionsKey<bool> NoRewriteKey = new("ProxyPlugin.NoRewrite");
+    // Marks fallback retries and self-issued requests (e.g. the UI proxy test) so we never
+    // rewrite, inject, wrap, or log them again. Shared with callers that issue hands-off probes.
+    internal static readonly HttpRequestOptionsKey<bool> NoRewriteKey = new("ProxyPlugin.NoRewrite");
 
     private static volatile HttpInterceptor? _active;
 
@@ -162,8 +163,8 @@ public sealed class HttpInterceptor : IDisposable
             if (!self._settingsProvider().Enabled)
                 return;
 
-            // Fallback retries / self-issued requests are pre-marked; do not wrap/log them twice.
-            if (request.Options.TryGetValue(NoRewriteKey, out var skip) && skip)
+            // Do not wrap/log fallback retries or self-issued requests twice.
+            if (IsBypassRequest(request))
                 return;
 
             request.Options.TryGetValue(OriginalUriKey, out var originalUri);
@@ -188,10 +189,9 @@ public sealed class HttpInterceptor : IDisposable
         if (!settings.Enabled)
             return;
 
-        // Requests ProxyPlugin issues itself (fallback retries, the UI proxy test) are
-        // pre-marked so we leave them entirely alone: no rewrite and no forced injection.
-        // The fallback client already carries DynamicProxy via its constructor.
-        if (request.Options.TryGetValue(NoRewriteKey, out var skip) && skip)
+        // Leave self-issued requests (fallback retries, the UI proxy test) entirely alone:
+        // no rewrite and no forced injection. The fallback client already carries DynamicProxy.
+        if (IsBypassRequest(request))
             return;
 
         if (allowRewrite
@@ -210,6 +210,9 @@ public sealed class HttpInterceptor : IDisposable
 
     private static bool ShouldRewrite(ProxySettings settings)
         => settings.Mode == NetworkMode.NoProxy;
+
+    private static bool IsBypassRequest(HttpRequestMessage request)
+        => request.Options.TryGetValue(NoRewriteKey, out var skip) && skip;
 
     private void TryInject(object handler)
     {
