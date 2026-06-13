@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+    <ProjectReference Include="..\ProxyPlugin.Core\ProxyPlugin.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Reuse the real interceptor code, compiled against NuGet Harmony for out-of-game testing -->
+    <Compile Include="..\ProxyPlugin\HttpInterceptor.cs" />
+  </ItemGroup>
+</Project>

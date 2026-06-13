@@ -1,0 +1,20 @@
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <Version>0.1.0.0</Version>
+    <AssemblyName>ProxyPlugin</AssemblyName>
+    <RootNamespace>ProxyPlugin</RootNamespace>
+    <PackageProjectUrl>https://github.com/your-org/ProxyPlugin</PackageProjectUrl>
+    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+    <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ProxyPlugin.Core\ProxyPlugin.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Data\mirror-rules.json" />
+  </ItemGroup>
+</Project>
