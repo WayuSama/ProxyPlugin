@@ -36,4 +36,25 @@ public class MirrorRulesetTests
         Assert.Empty(rs.Rules);
         Assert.False(rs.TryRewrite(new Uri("https://x/y"), out _));
     }
+
+    [Fact]
+    public void FromJson_ToleratesCommentsTrailingCommasAndCaseInsensitiveKeys()
+    {
+        const string json = """
+        [ /* a comment */
+          { "matchHost": "h.com", "targetHost": "t.cn", },
+        ]
+        """;
+        var rs = MirrorRuleset.FromJson(json);
+        Assert.Single(rs.Rules);
+        Assert.Equal("h.com", rs.Rules[0].MatchHost);
+    }
+
+    [Fact]
+    public void FromJson_NullOrBlank_ReturnsEmpty()
+    {
+        Assert.Empty(MirrorRuleset.FromJson(null!).Rules);
+        Assert.Empty(MirrorRuleset.FromJson("").Rules);
+        Assert.Empty(MirrorRuleset.FromJson("   ").Rules);
+    }
 }
