@@ -108,4 +108,18 @@ public class DynamicProxyTests
         settings.ManualProxyUrl = "http://10.0.0.2:3128";
         Assert.Equal(new Uri("http://10.0.0.2:3128"), p.GetProxy(Dest)); // cache invalidated on url change
     }
+
+    [Fact]
+    public void Shutdown_ForcesDirect_RegardlessOfMode()
+    {
+        var settings = new ProxySettings { Mode = NetworkMode.ManualProxy, ManualProxyUrl = "http://127.0.0.1:7890" };
+        var p = new DynamicProxy(() => settings, new FakeReader());
+        Assert.False(p.IsBypassed(Dest));
+        Assert.NotNull(p.GetProxy(Dest));
+
+        p.Shutdown();
+
+        Assert.Null(p.GetProxy(Dest));
+        Assert.True(p.IsBypassed(Dest));
+    }
 }

@@ -10,6 +10,7 @@ public sealed class DynamicProxy : IWebProxy
     private string? _cachedManualUrl;
     private Uri? _cachedManualUri;
     private readonly object _manualLock = new();
+    private volatile bool _shutdown;
 
     public DynamicProxy(Func<ProxySettings> settingsProvider, ISystemProxyReader systemReader)
     {
@@ -19,8 +20,18 @@ public sealed class DynamicProxy : IWebProxy
 
     public ICredentials? Credentials { get; set; }
 
+    /// <summary>
+    /// Permanently forces direct (no proxy) resolution. Called on plugin unload so that any
+    /// handler that already had this proxy reflected into its built connection chain stops
+    /// routing through us, keeping disable behavior predictable.
+    /// </summary>
+    public void Shutdown() => _shutdown = true;
+
     public Uri? GetProxy(Uri destination)
     {
+        if (_shutdown)
+            return null;
+
         var settings = _settingsProvider();
         if (!settings.Enabled)
             return null;
@@ -52,6 +63,9 @@ public sealed class DynamicProxy : IWebProxy
 
     public bool IsBypassed(Uri host)
     {
+        if (_shutdown)
+            return true;
+
         var settings = _settingsProvider();
         if (!settings.Enabled)
             return true;
