@@ -1,19 +1,15 @@
-﻿using Dalamud.Configuration;
-using System;
+﻿using System;
+using Dalamud.Configuration;
+using ProxyPlugin.Core;
 
-namespace SamplePlugin;
+namespace ProxyPlugin;
 
 [Serializable]
-public class Configuration : IPluginConfiguration
+public sealed class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 0;
+    public int Version { get; set; } = 1;
 
-    public bool IsConfigWindowMovable { get; set; } = true;
-    public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
+    public ProxySettings Settings { get; set; } = new();
 
-    // The below exists just to make saving less cumbersome
-    public void Save()
-    {
-        Plugin.PluginInterface.SavePluginConfig(this);
-    }
+    public void Save() => Plugin.PluginInterface.SavePluginConfig(this);
 }

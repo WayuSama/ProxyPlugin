@@ -1,0 +1,26 @@
+// ProxyPlugin built-in mirror ruleset (embedded; ships with the plugin version).
+// These are TEMPLATES: replace each TargetHost with a real maintainer-operated
+// mirror/reverse-proxy domain, then set "Enabled": true before release.
+// Rules ship DISABLED so the default install never rewrites to a dead mirror.
+[
+  {
+    "Id": "github-raw",
+    "MatchHost": "raw.githubusercontent.com",
+    "TargetHost": "raw.mirror.example.cn",
+    "Enabled": false
+  },
+  {
+    "Id": "github-release-assets",
+    "MatchHost": "objects.githubusercontent.com",
+    "TargetHost": "objects.mirror.example.cn",
+    "Enabled": false
+  },
+  {
+    "Id": "crowdin-api",
+    "MatchHost": "api.crowdin.com",
+    "MatchPathPrefix": "/api/v2",
+    "TargetHost": "crowdin.mirror.example.cn",
+    "TargetPathPrefix": "/api/v2",
+    "Enabled": false
+  }
+]
