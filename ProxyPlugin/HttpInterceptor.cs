@@ -175,11 +175,13 @@ public sealed class HttpInterceptor : IDisposable
         if (!settings.Enabled)
             return;
 
-        // Fallback retries are pre-marked; never rewrite them again (re-entry guard).
-        var noRewrite = request.Options.TryGetValue(NoRewriteKey, out var skip) && skip;
+        // Requests ProxyPlugin issues itself (fallback retries, the UI proxy test) are
+        // pre-marked so we leave them entirely alone: no rewrite and no forced injection.
+        // The fallback client already carries DynamicProxy via its constructor.
+        if (request.Options.TryGetValue(NoRewriteKey, out var skip) && skip)
+            return;
 
         if (allowRewrite
-            && !noRewrite
             && request.Content == null
             && ShouldRewrite(settings)
             && _ruleset.TryRewrite(request.RequestUri, out var rewritten)

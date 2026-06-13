@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Http;
 using System.Numerics;
+using System.Threading.Tasks;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
 using ProxyPlugin.Core;
@@ -61,7 +62,7 @@ public sealed class ConfigWindow : Window, IDisposable
             }
             ImGui.SameLine();
             if (ImGui.Button("Test"))
-                _testResult = TestProxy(_manualUrlBuffer);
+                StartProxyTest(_manualUrlBuffer);
             if (!string.IsNullOrEmpty(_testResult))
                 ImGui.TextUnformatted(_testResult);
             ImGui.Unindent();
@@ -119,22 +120,32 @@ public sealed class ConfigWindow : Window, IDisposable
         ImGui.EndTable();
     }
 
-    private static string TestProxy(string url)
+    private void StartProxyTest(string url)
     {
         if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            return "Invalid URL";
-        try
         {
-            using var handler = new SocketsHttpHandler { Proxy = new WebProxy(uri), UseProxy = true };
-            using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
-            var req = new HttpRequestMessage(HttpMethod.Head, "https://www.gstatic.com/generate_204");
-            req.Options.Set(new HttpRequestOptionsKey<bool>("ProxyPlugin.NoRewrite"), true);
-            var resp = client.Send(req);
-            return $"OK ({(int)resp.StatusCode})";
+            _testResult = "Invalid URL";
+            return;
         }
-        catch (Exception ex)
+
+        _testResult = "Testing...";
+        // Run off the render thread so the game UI never freezes during the probe.
+        _ = Task.Run(() =>
         {
-            return $"Failed: {ex.Message}";
-        }
+            try
+            {
+                using var handler = new SocketsHttpHandler { Proxy = new WebProxy(uri), UseProxy = true };
+                using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(5) };
+                var req = new HttpRequestMessage(HttpMethod.Head, "https://www.gstatic.com/generate_204");
+                // Mark as hands-off so our own interceptor does not redirect the probe.
+                req.Options.Set(new HttpRequestOptionsKey<bool>("ProxyPlugin.NoRewrite"), true);
+                using var resp = client.Send(req);
+                _testResult = $"OK ({(int)resp.StatusCode})";
+            }
+            catch (Exception ex)
+            {
+                _testResult = $"Failed: {ex.Message}";
+            }
+        });
     }
 }
