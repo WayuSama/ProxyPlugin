@@ -164,6 +164,99 @@
     <value>ERR</value>
   </data>
   <data name="cmd.help" xml:space="preserve">
-    <value>Open ProxyPlugin settings.</value>
+    <value>Open ProxyPlugin settings. Use "/proxyplugin diag" for network diagnostics.</value>
+  </data>
+  <data name="diag.title" xml:space="preserve">
+    <value>Network Diagnostics</value>
+  </data>
+  <data name="diag.open" xml:space="preserve">
+    <value>Network diagnostics</value>
+  </data>
+  <data name="diag.intro" xml:space="preserve">
+    <value>Check whether the key services used by the game and plugins are reachable, comparing a direct connection against your configured proxy.</value>
+  </data>
+  <data name="diag.legend" xml:space="preserve">
+    <value>Green = OK, Yellow = reachable (HTTP error), Red = failed (hover for details)</value>
+  </data>
+  <data name="diag.mode" xml:space="preserve">
+    <value>Route: {0}</value>
+  </data>
+  <data name="diag.route.disabled" xml:space="preserve">
+    <value>plugin disabled (direct)</value>
+  </data>
+  <data name="diag.route.direct" xml:space="preserve">
+    <value>direct (no proxy)</value>
+  </data>
+  <data name="diag.route.system" xml:space="preserve">
+    <value>system proxy -&gt; {0}</value>
+  </data>
+  <data name="diag.route.manual" xml:space="preserve">
+    <value>manual proxy -&gt; {0}</value>
+  </data>
+  <data name="diag.runAll" xml:space="preserve">
+    <value>Run all tests</value>
+  </data>
+  <data name="diag.copy" xml:space="preserve">
+    <value>Copy report</value>
+  </data>
+  <data name="diag.col.target" xml:space="preserve">
+    <value>Target</value>
+  </data>
+  <data name="diag.col.direct" xml:space="preserve">
+    <value>Direct</value>
+  </data>
+  <data name="diag.col.proxy" xml:space="preserve">
+    <value>Via proxy</value>
+  </data>
+  <data name="diag.state.failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="diag.err.timeout" xml:space="preserve">
+    <value>Timed out</value>
+  </data>
+  <data name="diag.cat.basic" xml:space="preserve">
+    <value>Connectivity</value>
+  </data>
+  <data name="diag.cat.dalamud" xml:space="preserve">
+    <value>Dalamud / Plugins</value>
+  </data>
+  <data name="diag.cat.github" xml:space="preserve">
+    <value>GitHub</value>
+  </data>
+  <data name="diag.cat.services" xml:space="preserve">
+    <value>Game services</value>
+  </data>
+  <data name="diag.t.basic" xml:space="preserve">
+    <value>Baseline (gstatic 204)</value>
+  </data>
+  <data name="diag.t.google" xml:space="preserve">
+    <value>Google (overseas)</value>
+  </data>
+  <data name="diag.t.ottercorp" xml:space="preserve">
+    <value>Dalamud server (ottercorp)</value>
+  </data>
+  <data name="diag.t.ghMain" xml:space="preserve">
+    <value>GitHub site</value>
+  </data>
+  <data name="diag.t.ghApi" xml:space="preserve">
+    <value>GitHub API</value>
+  </data>
+  <data name="diag.t.ghRaw" xml:space="preserve">
+    <value>GitHub raw files</value>
+  </data>
+  <data name="diag.t.ghObjects" xml:space="preserve">
+    <value>GitHub release assets</value>
+  </data>
+  <data name="diag.t.ghCodeload" xml:space="preserve">
+    <value>GitHub source download</value>
+  </data>
+  <data name="diag.t.universalis" xml:space="preserve">
+    <value>Universalis (market board)</value>
+  </data>
+  <data name="diag.t.xivapi" xml:space="preserve">
+    <value>XIVAPI (game data)</value>
+  </data>
+  <data name="diag.t.crowdin" xml:space="preserve">
+    <value>Crowdin (translations)</value>
   </data>
 </root>

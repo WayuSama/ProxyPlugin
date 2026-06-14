@@ -24,6 +24,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private readonly WindowSystem _windowSystem = new("ProxyPlugin");
     private readonly ConfigWindow _configWindow;
+    private readonly DiagnosticsWindow _diagnosticsWindow;
 
     private readonly WinHttpSystemProxyReader _systemReader;
     private readonly DynamicProxy _proxy;
@@ -63,7 +64,9 @@ public sealed class Plugin : IDalamudPlugin
         _watcher = new SystemProxyWatcher(_systemReader.Invalidate, logger);
         _watcher.Start();
 
-        _configWindow = new ConfigWindow(this, _requestLog, _interceptor, _ruleset, _proxy);
+        _diagnosticsWindow = new DiagnosticsWindow(Configuration, _proxy);
+        _configWindow = new ConfigWindow(this, _requestLog, _interceptor, _ruleset, _proxy, _diagnosticsWindow);
+        _windowSystem.AddWindow(_diagnosticsWindow);
         _windowSystem.AddWindow(_configWindow);
 
         PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
@@ -88,6 +91,7 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.LanguageChanged -= OnUiLanguageChanged;
         _windowSystem.RemoveAllWindows();
 
+        _diagnosticsWindow.Dispose();
         _watcher.Dispose();
         _interceptor.Dispose();
 
@@ -101,7 +105,15 @@ public sealed class Plugin : IDalamudPlugin
         Configuration.Save();
     }
 
-    private void OnCommand(string command, string args) => ToggleConfigUi();
+    private void OnCommand(string command, string args)
+    {
+        var arg = args.Trim();
+        if (arg.Equals("diag", StringComparison.OrdinalIgnoreCase)
+            || arg.Equals("diagnostics", StringComparison.OrdinalIgnoreCase))
+            _diagnosticsWindow.Toggle();
+        else
+            ToggleConfigUi();
+    }
 
     private void ToggleConfigUi() => _configWindow.Toggle();
 

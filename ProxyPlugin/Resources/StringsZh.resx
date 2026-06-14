@@ -164,6 +164,99 @@
     <value>失败</value>
   </data>
   <data name="cmd.help" xml:space="preserve">
-    <value>打开 ProxyPlugin 设置。</value>
+    <value>打开 ProxyPlugin 设置。输入“/proxyplugin diag”可打开网络诊断。</value>
+  </data>
+  <data name="diag.title" xml:space="preserve">
+    <value>网络诊断</value>
+  </data>
+  <data name="diag.open" xml:space="preserve">
+    <value>网络诊断</value>
+  </data>
+  <data name="diag.intro" xml:space="preserve">
+    <value>检测游戏与插件所依赖的关键服务是否可以正常访问，并对比直连与走代理两种线路。</value>
+  </data>
+  <data name="diag.legend" xml:space="preserve">
+    <value>绿色＝正常，黄色＝可达（HTTP 错误码），红色＝失败（悬停查看详情）</value>
+  </data>
+  <data name="diag.mode" xml:space="preserve">
+    <value>测试线路：{0}</value>
+  </data>
+  <data name="diag.route.disabled" xml:space="preserve">
+    <value>插件已禁用（直连）</value>
+  </data>
+  <data name="diag.route.direct" xml:space="preserve">
+    <value>直连（不使用代理）</value>
+  </data>
+  <data name="diag.route.system" xml:space="preserve">
+    <value>系统代理 -&gt; {0}</value>
+  </data>
+  <data name="diag.route.manual" xml:space="preserve">
+    <value>手动代理 -&gt; {0}</value>
+  </data>
+  <data name="diag.runAll" xml:space="preserve">
+    <value>全部测试</value>
+  </data>
+  <data name="diag.copy" xml:space="preserve">
+    <value>复制报告</value>
+  </data>
+  <data name="diag.col.target" xml:space="preserve">
+    <value>目标</value>
+  </data>
+  <data name="diag.col.direct" xml:space="preserve">
+    <value>直连</value>
+  </data>
+  <data name="diag.col.proxy" xml:space="preserve">
+    <value>走代理</value>
+  </data>
+  <data name="diag.state.failed" xml:space="preserve">
+    <value>失败</value>
+  </data>
+  <data name="diag.err.timeout" xml:space="preserve">
+    <value>连接超时</value>
+  </data>
+  <data name="diag.cat.basic" xml:space="preserve">
+    <value>网络连通性</value>
+  </data>
+  <data name="diag.cat.dalamud" xml:space="preserve">
+    <value>Dalamud / 插件</value>
+  </data>
+  <data name="diag.cat.github" xml:space="preserve">
+    <value>GitHub</value>
+  </data>
+  <data name="diag.cat.services" xml:space="preserve">
+    <value>游戏相关服务</value>
+  </data>
+  <data name="diag.t.basic" xml:space="preserve">
+    <value>基础连通性（gstatic 204）</value>
+  </data>
+  <data name="diag.t.google" xml:space="preserve">
+    <value>Google（海外）</value>
+  </data>
+  <data name="diag.t.ottercorp" xml:space="preserve">
+    <value>Dalamud 服务器（ottercorp）</value>
+  </data>
+  <data name="diag.t.ghMain" xml:space="preserve">
+    <value>GitHub 主站</value>
+  </data>
+  <data name="diag.t.ghApi" xml:space="preserve">
+    <value>GitHub API</value>
+  </data>
+  <data name="diag.t.ghRaw" xml:space="preserve">
+    <value>GitHub 源文件（raw）</value>
+  </data>
+  <data name="diag.t.ghObjects" xml:space="preserve">
+    <value>GitHub 发布资源（objects）</value>
+  </data>
+  <data name="diag.t.ghCodeload" xml:space="preserve">
+    <value>GitHub 源码下载（codeload）</value>
+  </data>
+  <data name="diag.t.universalis" xml:space="preserve">
+    <value>Universalis（市场板）</value>
+  </data>
+  <data name="diag.t.xivapi" xml:space="preserve">
+    <value>XIVAPI（游戏数据）</value>
+  </data>
+  <data name="diag.t.crowdin" xml:space="preserve">
+    <value>Crowdin（翻译）</value>
   </data>
 </root>

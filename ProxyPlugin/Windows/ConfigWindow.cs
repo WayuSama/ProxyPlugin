@@ -23,10 +23,11 @@ public sealed class ConfigWindow : Window, IDisposable
     private readonly HttpInterceptor _interceptor;
     private readonly MirrorRuleset _ruleset;
     private readonly DynamicProxy _proxy;
+    private readonly DiagnosticsWindow _diagnostics;
     private string _manualUrlBuffer;
     private volatile string _testResult = "";
 
-    public ConfigWindow(Plugin plugin, RequestLog log, HttpInterceptor interceptor, MirrorRuleset ruleset, DynamicProxy proxy)
+    public ConfigWindow(Plugin plugin, RequestLog log, HttpInterceptor interceptor, MirrorRuleset ruleset, DynamicProxy proxy, DiagnosticsWindow diagnostics)
         : base("ProxyPlugin Settings###ProxyPluginConfig")
     {
         _config = plugin.Configuration;
@@ -34,6 +35,7 @@ public sealed class ConfigWindow : Window, IDisposable
         _interceptor = interceptor;
         _ruleset = ruleset;
         _proxy = proxy;
+        _diagnostics = diagnostics;
         _manualUrlBuffer = _config.Settings.ManualProxyUrl ?? "";
         Size = new Vector2(560, 480);
         SizeCondition = ImGuiCond.FirstUseEver;
@@ -57,6 +59,9 @@ public sealed class ConfigWindow : Window, IDisposable
             s.Enabled = enabled;
             _config.Save();
         }
+        ImGui.SameLine();
+        if (ImGui.Button(Loc.T("diag.open")))
+            _diagnostics.Toggle();
 
         ImGui.Separator();
         ImGui.TextUnformatted(Loc.T("mode.header"));
