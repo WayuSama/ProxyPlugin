@@ -7,8 +7,8 @@ public class RewriteEngineTests
 {
     private static MirrorRule Raw() => new()
     {
-        Id = "gh-raw", MatchHost = "raw.githubusercontent.com",
-        TargetHost = "mirror.example.cn", Enabled = true,
+        Id = "gh-raw", Pattern = @"^raw\.githubusercontent\.com",
+        Replacement = "mirror.example.cn", Enabled = true,
     };
 
     [Fact]
@@ -46,12 +46,12 @@ public class RewriteEngineTests
     }
 
     [Fact]
-    public void PathPrefix_RemappedWhenTargetPrefixSet()
+    public void HostAndPath_RemappedTogether()
     {
         var rule = new MirrorRule
         {
-            Id = "api", MatchHost = "api.crowdin.com", MatchPathPrefix = "/api/v2",
-            TargetHost = "crowdin.example.cn", TargetPathPrefix = "/cr", Enabled = true,
+            Id = "api", Pattern = @"^api\.crowdin\.com/api/v2",
+            Replacement = "crowdin.example.cn/cr", Enabled = true,
         };
         var input = new Uri("https://api.crowdin.com/api/v2/projects?p=1");
         Assert.True(RewriteEngine.TryRewrite(input, new[] { rule }, out var output));
@@ -61,17 +61,32 @@ public class RewriteEngineTests
     }
 
     [Fact]
-    public void PathPrefix_NotMatched_NoRewrite()
+    public void PathScope_NotMatched_NoRewrite()
     {
-        var rule = new MirrorRule { Id = "api", MatchHost = "api.crowdin.com", MatchPathPrefix = "/api/v2", TargetHost = "x.cn", Enabled = true };
+        var rule = new MirrorRule { Id = "api", Pattern = @"^api\.crowdin\.com/api/v2", Replacement = "x.cn", Enabled = true };
         Assert.False(RewriteEngine.TryRewrite(new Uri("https://api.crowdin.com/other"), new[] { rule }, out _));
+    }
+
+    [Fact]
+    public void CaptureGroup_InReplacement_IsExpanded()
+    {
+        var rule = new MirrorRule
+        {
+            Id = "cdn", Pattern = @"^cdn\.example\.com/(.*)",
+            Replacement = "mirror.cn/proxy/$1", Enabled = true,
+        };
+        var input = new Uri("https://cdn.example.com/a/b.js?v=2");
+        Assert.True(RewriteEngine.TryRewrite(input, new[] { rule }, out var output));
+        Assert.Equal("mirror.cn", output.Host);
+        Assert.Equal("/proxy/a/b.js", output.AbsolutePath);
+        Assert.Equal("?v=2", output.Query);
     }
 
     [Fact]
     public void FirstEnabledRule_Wins()
     {
-        var r1 = new MirrorRule { Id = "1", MatchHost = "a.com", TargetHost = "first.cn", Enabled = true };
-        var r2 = new MirrorRule { Id = "2", MatchHost = "a.com", TargetHost = "second.cn", Enabled = true };
+        var r1 = new MirrorRule { Id = "1", Pattern = @"^a\.com", Replacement = "first.cn", Enabled = true };
+        var r2 = new MirrorRule { Id = "2", Pattern = @"^a\.com", Replacement = "second.cn", Enabled = true };
         Assert.True(RewriteEngine.TryRewrite(new Uri("https://a.com/x"), new[] { r1, r2 }, out var o));
         Assert.Equal("first.cn", o.Host);
     }
@@ -102,12 +117,19 @@ public class RewriteEngineTests
     }
 
     [Fact]
-    public void MatchPathPrefix_WithoutTargetPrefix_KeepsPath()
+    public void HostOnlyPattern_KeepsFullPath()
     {
-        var rule = new MirrorRule { Id = "p", MatchHost = "h.com", MatchPathPrefix = "/api", TargetHost = "t.cn", Enabled = true };
+        var rule = new MirrorRule { Id = "p", Pattern = @"^h\.com", Replacement = "t.cn", Enabled = true };
         Assert.True(RewriteEngine.TryRewrite(new Uri("https://h.com/api/x?q=1"), new[] { rule }, out var o));
         Assert.Equal("t.cn", o.Host);
         Assert.Equal("/api/x", o.AbsolutePath);
         Assert.Equal("?q=1", o.Query);
+    }
+
+    [Fact]
+    public void InvalidPattern_IsSkipped()
+    {
+        var bad = new MirrorRule { Id = "bad", Pattern = "[", Replacement = "t.cn", Enabled = true };
+        Assert.False(RewriteEngine.TryRewrite(new Uri("https://h.com/x"), new[] { bad }, out _));
     }
 }

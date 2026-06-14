@@ -13,31 +13,40 @@ public sealed class MirrorRuleset
 
     public IReadOnlyList<MirrorRule> Rules { get; }
 
-    public MirrorRuleset(IReadOnlyList<MirrorRule> rules) => Rules = rules;
+    /// <summary>
+    /// Keeps only rules with a non-empty replacement and a compilable pattern; the rest are
+    /// dropped here so the hot path never has to revalidate. Pre-compiles each survivor.
+    /// </summary>
+    public MirrorRuleset(IReadOnlyList<MirrorRule>? rules)
+    {
+        var valid = new List<MirrorRule>(rules?.Count ?? 0);
+        if (rules != null)
+        {
+            foreach (var r in rules)
+            {
+                if (r is null || string.IsNullOrEmpty(r.Replacement) || r.GetRegex() is null)
+                    continue;
+                valid.Add(r);
+            }
+        }
+
+        Rules = valid;
+    }
 
     public static MirrorRuleset FromJson(string json)
     {
         if (string.IsNullOrWhiteSpace(json))
             return new MirrorRuleset(new List<MirrorRule>());
 
-        List<MirrorRule> valid = new();
         try
         {
             var parsed = JsonSerializer.Deserialize<List<MirrorRule>>(json, Options);
-            if (parsed != null)
-            {
-                foreach (var r in parsed)
-                {
-                    if (r != null && !string.IsNullOrWhiteSpace(r.MatchHost) && !string.IsNullOrWhiteSpace(r.TargetHost))
-                        valid.Add(r);
-                }
-            }
+            return new MirrorRuleset(parsed);
         }
         catch (JsonException)
         {
+            return new MirrorRuleset(new List<MirrorRule>());
         }
-
-        return new MirrorRuleset(valid);
     }
 
     public bool TryRewrite(Uri input, out Uri output) => RewriteEngine.TryRewrite(input, Rules, out output);

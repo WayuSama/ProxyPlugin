@@ -21,7 +21,7 @@ internal static class Program
         // fails, exercising the rewrite -> failure -> origin-fallback path end to end.
         var ruleset = new MirrorRuleset(new[]
         {
-            new MirrorRule { Id = "t", MatchHost = "localhost", TargetHost = "nonexistent.invalid", Enabled = true },
+            new MirrorRule { Id = "t", Pattern = "^localhost", Replacement = "nonexistent.invalid", Enabled = true },
         });
         var health = new MirrorHealth(new SystemClock(), failureThreshold: 5, cooldown: TimeSpan.FromSeconds(2));
         var log = new RequestLog();

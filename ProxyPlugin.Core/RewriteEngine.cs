@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace ProxyPlugin.Core;
 
 public static class RewriteEngine
@@ -8,36 +10,62 @@ public static class RewriteEngine
         if (rules is null || rules.Count == 0)
             return false;
 
+        // Match against "host/path" only. Scheme, port, query and fragment are reattached
+        // structurally below, so a rule author can never accidentally break them and the
+        // regex stays focused on the authority + path it actually cares about.
+        string source = input.Host + input.AbsolutePath;
+
         for (int i = 0; i < rules.Count; i++)
         {
             var rule = rules[i];
             if (!rule.Enabled)
                 continue;
-            if (string.IsNullOrWhiteSpace(rule.MatchHost) || string.IsNullOrWhiteSpace(rule.TargetHost))
-                continue;
-            if (!string.Equals(input.Host, rule.MatchHost, StringComparison.OrdinalIgnoreCase))
+
+            var regex = rule.GetRegex();
+            if (regex is null)
                 continue;
 
-            string path = input.AbsolutePath;
-            if (!string.IsNullOrEmpty(rule.MatchPathPrefix))
+            string rewritten;
+            try
             {
-                if (!path.StartsWith(rule.MatchPathPrefix, StringComparison.Ordinal))
+                if (!regex.IsMatch(source))
                     continue;
-                if (!string.IsNullOrEmpty(rule.TargetPathPrefix))
-                    path = rule.TargetPathPrefix + path.Substring(rule.MatchPathPrefix.Length);
+                rewritten = regex.Replace(source, rule.Replacement);
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                continue;
             }
 
-            var builder = new UriBuilder
+            if (string.IsNullOrEmpty(rewritten) || rewritten == source)
+                continue;
+
+            int slash = rewritten.IndexOf('/');
+            string newHost = slash < 0 ? rewritten : rewritten.Substring(0, slash);
+            string newPath = slash < 0 ? "/" : rewritten.Substring(slash);
+            if (newHost.Length == 0)
+                continue;
+
+            try
             {
-                Scheme = input.Scheme,
-                Host = rule.TargetHost,
-                Port = -1,
-                Path = path,
-                Query = input.Query.TrimStart('?'),
-                Fragment = input.Fragment.TrimStart('#'),
-            };
-            output = builder.Uri;
-            return true;
+                var builder = new UriBuilder
+                {
+                    Scheme = input.Scheme,
+                    Host = newHost,
+                    Port = -1,
+                    Path = newPath,
+                    Query = input.Query.TrimStart('?'),
+                    Fragment = input.Fragment.TrimStart('#'),
+                };
+                output = builder.Uri;
+                return true;
+            }
+            catch (Exception)
+            {
+                // The replacement produced an invalid authority; skip this rule rather than
+                // letting a malformed mirror config surface on the caller's request.
+                continue;
+            }
         }
 
         return false;

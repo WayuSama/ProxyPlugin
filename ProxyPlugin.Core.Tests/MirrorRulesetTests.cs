@@ -10,7 +10,7 @@ public class MirrorRulesetTests
     {
         const string json = """
         [
-          { "Id": "gh-raw", "MatchHost": "raw.githubusercontent.com", "TargetHost": "mirror.example.cn", "Enabled": true }
+          { "Id": "gh-raw", "Pattern": "^raw\\.githubusercontent\\.com", "Replacement": "mirror.example.cn", "Enabled": true }
         ]
         """;
         var rs = MirrorRuleset.FromJson(json);
@@ -20,13 +20,23 @@ public class MirrorRulesetTests
     }
 
     [Fact]
-    public void FromJson_SkipsInvalidEntries()
+    public void FromJson_SkipsEntriesMissingPatternOrReplacement()
     {
         const string json = """
-        [ { "Id": "bad" }, { "MatchHost": "h.com", "TargetHost": "t.cn" } ]
+        [ { "Id": "bad" }, { "Pattern": "^h\\.com", "Replacement": "t.cn" } ]
         """;
         var rs = MirrorRuleset.FromJson(json);
         Assert.Single(rs.Rules);
+    }
+
+    [Fact]
+    public void FromJson_DropsRulesWithInvalidRegex()
+    {
+        const string json = """
+        [ { "Id": "bad", "Pattern": "[", "Replacement": "t.cn", "Enabled": true } ]
+        """;
+        var rs = MirrorRuleset.FromJson(json);
+        Assert.Empty(rs.Rules);
     }
 
     [Fact]
@@ -42,12 +52,12 @@ public class MirrorRulesetTests
     {
         const string json = """
         [ /* a comment */
-          { "matchHost": "h.com", "targetHost": "t.cn", },
+          { "pattern": "^h\\.com", "replacement": "t.cn", },
         ]
         """;
         var rs = MirrorRuleset.FromJson(json);
         Assert.Single(rs.Rules);
-        Assert.Equal("h.com", rs.Rules[0].MatchHost);
+        Assert.Equal(@"^h\.com", rs.Rules[0].Pattern);
     }
 
     [Fact]

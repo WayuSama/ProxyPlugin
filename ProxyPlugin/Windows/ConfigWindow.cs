@@ -178,8 +178,8 @@ public sealed class ConfigWindow : Window, IDisposable
         {
             ImGui.TableNextRow();
             ImGui.TableNextColumn(); ImGui.TextUnformatted(r.Enabled ? Loc.T("mirror.yes") : "-");
-            ImGui.TableNextColumn(); ImGui.TextUnformatted(r.MatchHost + (r.MatchPathPrefix ?? ""));
-            ImGui.TableNextColumn(); ImGui.TextUnformatted(r.TargetHost + (r.TargetPathPrefix ?? ""));
+            ImGui.TableNextColumn(); ImGui.TextUnformatted(r.Pattern);
+            ImGui.TableNextColumn(); ImGui.TextUnformatted(r.Replacement);
         }
 
         ImGui.EndTable();
