@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace ProxyPlugin.Core;
@@ -11,21 +10,22 @@ public sealed class MirrorRule
     private Regex? _compiled;
     private bool _compileFailed;
 
-    public string Id { get; set; } = "";
+    public string Id { get; init; } = "";
 
     /// <summary>
     /// Regex evaluated against the request's <c>host/path</c> (scheme, port, query and
     /// fragment are excluded and handled structurally by <see cref="RewriteEngine"/>).
     /// Anchor with <c>^</c> to match from the host, e.g. <c>^raw\.githubusercontent\.com</c>.
     /// Hosts are compared lowercase (<see cref="Uri.Host"/> is already normalized).
+    /// Init-only so the compiled-regex cache below can never go stale.
     /// </summary>
-    public string Pattern { get; set; } = "";
+    public string Pattern { get; init; } = "";
 
     /// <summary>
     /// .NET regex replacement applied to the matched <c>host/path</c>; supports capture
     /// groups (<c>$1</c>). The text up to the first <c>/</c> becomes the new host.
     /// </summary>
-    public string Replacement { get; set; } = "";
+    public string Replacement { get; init; } = "";
 
     public bool Enabled { get; set; } = true;
 

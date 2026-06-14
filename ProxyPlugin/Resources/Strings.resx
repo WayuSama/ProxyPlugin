@@ -160,9 +160,6 @@
   <data name="upstream.error" xml:space="preserve">
     <value>error: {0}</value>
   </data>
-  <data name="mirror.yes" xml:space="preserve">
-    <value>Y</value>
-  </data>
   <data name="log.err" xml:space="preserve">
     <value>ERR</value>
   </data>

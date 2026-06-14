@@ -67,4 +67,33 @@ public class MirrorRulesetTests
         Assert.Empty(MirrorRuleset.FromJson("").Rules);
         Assert.Empty(MirrorRuleset.FromJson("   ").Rules);
     }
+
+    [Fact]
+    public void ApplyEnabledOverrides_FlipsMatchingRuleByIdOnly()
+    {
+        var rs = new MirrorRuleset(new[]
+        {
+            new MirrorRule { Id = "a", Pattern = @"^a\.com", Replacement = "x.cn", Enabled = false },
+            new MirrorRule { Id = "b", Pattern = @"^b\.com", Replacement = "y.cn", Enabled = true },
+        });
+
+        rs.ApplyEnabledOverrides(new Dictionary<string, bool> { ["a"] = true });
+
+        Assert.True(rs.Rules.Single(r => r.Id == "a").Enabled);
+        Assert.True(rs.Rules.Single(r => r.Id == "b").Enabled);
+    }
+
+    [Fact]
+    public void ApplyEnabledOverrides_NullOrEmpty_IsNoOp()
+    {
+        var rs = new MirrorRuleset(new[]
+        {
+            new MirrorRule { Id = "a", Pattern = @"^a\.com", Replacement = "x.cn", Enabled = true },
+        });
+
+        rs.ApplyEnabledOverrides(new Dictionary<string, bool>());
+        rs.ApplyEnabledOverrides(null!);
+
+        Assert.True(rs.Rules.Single().Enabled);
+    }
 }

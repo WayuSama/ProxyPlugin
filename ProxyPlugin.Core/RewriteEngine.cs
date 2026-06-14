@@ -28,8 +28,8 @@ public static class RewriteEngine
             string rewritten;
             try
             {
-                if (!regex.IsMatch(source))
-                    continue;
+                // Replace returns the original instance when nothing matches, so the
+                // equality check below doubles as the "did this rule apply?" test.
                 rewritten = regex.Replace(source, rule.Replacement);
             }
             catch (RegexMatchTimeoutException)
@@ -60,7 +60,7 @@ public static class RewriteEngine
                 output = builder.Uri;
                 return true;
             }
-            catch (Exception)
+            catch (UriFormatException)
             {
                 // The replacement produced an invalid authority; skip this rule rather than
                 // letting a malformed mirror config surface on the caller's request.

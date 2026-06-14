@@ -160,9 +160,6 @@
   <data name="upstream.error" xml:space="preserve">
     <value>错误：{0}</value>
   </data>
-  <data name="mirror.yes" xml:space="preserve">
-    <value>是</value>
-  </data>
   <data name="log.err" xml:space="preserve">
     <value>失败</value>
   </data>

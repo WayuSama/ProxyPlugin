@@ -84,5 +84,21 @@ public sealed class MirrorRuleset
     /// </summary>
     public static MirrorRuleset Default() => FromJson(DefaultRulesJson);
 
+    /// <summary>
+    /// Overlays persisted enable/disable choices (keyed by <see cref="MirrorRule.Id"/>) onto the
+    /// current rules. Rules without an Id or without a matching entry keep their built-in default.
+    /// </summary>
+    public void ApplyEnabledOverrides(IReadOnlyDictionary<string, bool> overrides)
+    {
+        if (overrides is null || overrides.Count == 0)
+            return;
+
+        foreach (var rule in Rules)
+        {
+            if (!string.IsNullOrEmpty(rule.Id) && overrides.TryGetValue(rule.Id, out var enabled))
+                rule.Enabled = enabled;
+        }
+    }
+
     public bool TryRewrite(Uri input, out Uri output) => RewriteEngine.TryRewrite(input, Rules, out output);
 }
