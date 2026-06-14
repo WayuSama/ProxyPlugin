@@ -36,8 +36,4 @@
           CopyToOutputDirectory="PreserveNewest"
           Visible="false" />
   </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Data\mirror-rules.json" />
-  </ItemGroup>
 </Project>

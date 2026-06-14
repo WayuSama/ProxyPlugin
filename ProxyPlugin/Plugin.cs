@@ -1,9 +1,6 @@
 using System;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Reflection;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
@@ -49,7 +46,8 @@ public sealed class Plugin : IDalamudPlugin
 
         _requestLog = new RequestLog();
         _health = new MirrorHealth(new SystemClock());
-        _ruleset = MirrorRuleset.FromJson(LoadEmbeddedRules());
+        _ruleset = MirrorRuleset.Default();
+        ApplyRuleOverrides();
         _systemReader = new WinHttpSystemProxyReader();
         _proxy = new DynamicProxy(() => Configuration.Settings, _systemReader);
 
@@ -103,18 +101,14 @@ public sealed class Plugin : IDalamudPlugin
         Configuration.Save();
     }
 
-    private static string LoadEmbeddedRules()
+    // Overlay the user's persisted enable/disable choices onto the built-in ruleset.
+    private void ApplyRuleOverrides()
     {
-        var asm = Assembly.GetExecutingAssembly();
-        var name = asm.GetManifestResourceNames()
-            .FirstOrDefault(n => n.EndsWith("mirror-rules.json", StringComparison.Ordinal));
-        if (name == null)
-            return "[]";
-        using var stream = asm.GetManifestResourceStream(name);
-        if (stream == null)
-            return "[]";
-        using var reader = new StreamReader(stream);
-        return reader.ReadToEnd();
+        foreach (var rule in _ruleset.Rules)
+        {
+            if (!string.IsNullOrEmpty(rule.Id) && Configuration.RuleOverrides.TryGetValue(rule.Id, out var enabled))
+                rule.Enabled = enabled;
+        }
     }
 
     private void OnCommand(string command, string args) => ToggleConfigUi();

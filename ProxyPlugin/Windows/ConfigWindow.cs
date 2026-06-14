@@ -174,15 +174,33 @@ public sealed class ConfigWindow : Window, IDisposable
         ImGui.TableSetupColumn(Loc.T("mirror.col.target"), ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableHeadersRow();
 
-        foreach (var r in _ruleset.Rules)
+        var rules = _ruleset.Rules;
+        for (int i = 0; i < rules.Count; i++)
         {
+            var r = rules[i];
             ImGui.TableNextRow();
-            ImGui.TableNextColumn(); ImGui.TextUnformatted(r.Enabled ? Loc.T("mirror.yes") : "-");
+
+            ImGui.TableNextColumn();
+            bool enabled = r.Enabled;
+            // Index-based id keeps each checkbox unique even if two rules share an Id.
+            if (ImGui.Checkbox($"##rule{i}", ref enabled))
+                ToggleRule(r, enabled);
+
             ImGui.TableNextColumn(); ImGui.TextUnformatted(r.Pattern);
             ImGui.TableNextColumn(); ImGui.TextUnformatted(r.Replacement);
         }
 
         ImGui.EndTable();
+    }
+
+    // Flip the live rule (the rewrite engine reads Enabled per request) and persist the
+    // choice so it survives a plugin reload, which otherwise resets to the built-in defaults.
+    private void ToggleRule(MirrorRule rule, bool enabled)
+    {
+        rule.Enabled = enabled;
+        if (!string.IsNullOrEmpty(rule.Id))
+            _config.RuleOverrides[rule.Id] = enabled;
+        _config.Save();
     }
 
     private void DrawLogTable()
