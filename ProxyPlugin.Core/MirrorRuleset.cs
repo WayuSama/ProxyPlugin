@@ -11,36 +11,6 @@ public sealed class MirrorRuleset
         AllowTrailingCommas = true,
     };
 
-    // Built-in mirror ruleset, compiled into the plugin (no external file). These are
-    // TEMPLATES: replace each Replacement host with a real maintainer-operated
-    // mirror/reverse-proxy domain, then set "Enabled": true before release. Each rule
-    // rewrites a request via a regex over "host/path"; scheme, port, query and fragment
-    // are preserved automatically, and the text up to the first '/' in Replacement
-    // becomes the new (mirror) host. Rules ship DISABLED so a default install never
-    // rewrites to a dead mirror.
-    private const string DefaultRulesJson = """
-    [
-      {
-        "Id": "github-raw",
-        "Pattern": "^raw\\.githubusercontent\\.com",
-        "Replacement": "raw.mirror.example.cn",
-        "Enabled": false
-      },
-      {
-        "Id": "github-release-assets",
-        "Pattern": "^objects\\.githubusercontent\\.com",
-        "Replacement": "objects.mirror.example.cn",
-        "Enabled": false
-      },
-      {
-        "Id": "crowdin-api",
-        "Pattern": "^api\\.crowdin\\.com/api/v2",
-        "Replacement": "crowdin.mirror.example.cn/api/v2",
-        "Enabled": false
-      }
-    ]
-    """;
-
     public IReadOnlyList<MirrorRule> Rules { get; }
 
     /// <summary>
@@ -80,9 +50,19 @@ public sealed class MirrorRuleset
     }
 
     /// <summary>
-    /// The built-in ruleset compiled into the plugin (see <c>DefaultRulesJson</c>).
+    /// The built-in mirror ruleset compiled into the plugin (no external file). These are
+    /// TEMPLATES: replace each Replacement host with a real maintainer-operated
+    /// mirror/reverse-proxy domain, then set <c>Enabled = true</c> before release. Each rule
+    /// rewrites a request via a regex over <c>host/path</c>; scheme, port, query and fragment
+    /// are preserved automatically, and the text up to the first '/' in Replacement becomes the
+    /// new (mirror) host. Rules ship DISABLED so a default install never rewrites to a dead mirror.
     /// </summary>
-    public static MirrorRuleset Default() => FromJson(DefaultRulesJson);
+    public static MirrorRuleset Default() => new(new List<MirrorRule>
+    {
+        // new() { Id = "github-raw", Pattern = @"^raw\.githubusercontent\.com", Replacement = "raw.mirror.example.cn", Enabled = false },
+        // new() { Id = "github-release-assets", Pattern = @"^objects\.githubusercontent\.com", Replacement = "objects.mirror.example.cn", Enabled = false },
+        // new() { Id = "crowdin-api", Pattern = @"^api\.crowdin\.com/api/v2", Replacement = "crowdin.mirror.example.cn/api/v2", Enabled = false },
+    });
 
     /// <summary>
     /// Overlays persisted enable/disable choices (keyed by <see cref="MirrorRule.Id"/>) onto the
