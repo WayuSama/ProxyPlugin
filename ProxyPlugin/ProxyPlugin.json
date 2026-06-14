@@ -1,9 +1,9 @@
 {
-  "Author": "your name here",
+  "Author": "Loskh",
   "Name": "ProxyPlugin",
   "InternalName": "ProxyPlugin",
-  "Punchline": "Route other plugins' traffic through your proxy, or accelerate via mirrors.",
-  "Description": "Forces in-process plugin HTTP/WebSocket traffic through a system/manual proxy, or rewrites whitelisted static-resource URLs to built-in mirrors with automatic origin fallback. Command: /proxyplugin.",
+  "Punchline": "通过你的代理转发其他插件的流量，或借助镜像加速。",
+  "Description": "强制进程内插件的 HTTP/WebSocket 流量通过系统/手动代理，或将白名单中的静态资源 URL 重写为内置镜像，并在失败时自动回退到源站。命令：/proxyplugin。",
   "ApplicableVersion": "any",
   "LoadPriority": 1000,
   "Tags": [

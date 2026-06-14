@@ -3,7 +3,7 @@
     <Version>0.1.0.0</Version>
     <AssemblyName>ProxyPlugin</AssemblyName>
     <RootNamespace>ProxyPlugin</RootNamespace>
-    <PackageProjectUrl>https://github.com/your-org/ProxyPlugin</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/Loskh/ProxyPlugin</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
