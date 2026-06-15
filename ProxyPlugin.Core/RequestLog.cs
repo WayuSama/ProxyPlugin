@@ -14,6 +14,7 @@ public sealed class RequestLogEntry
 
     public string Result { get; set; } = "";
     public long ElapsedMs { get; set; }
+    public string HttpVersion { get; set; } = "";
 }
 
 public sealed class RequestLog

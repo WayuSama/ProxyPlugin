@@ -261,7 +261,7 @@ public sealed class HttpInterceptor : IDisposable
                     var originResp = await _fallbackClient
                         .SendAsync(clone, HttpCompletionOption.ResponseHeadersRead)
                         .ConfigureAwait(false);
-                    Log(originalUri!, originalUri!, false, proxied, (int)originResp.StatusCode, "fallback", sw.ElapsedMilliseconds);
+                    Log(originalUri!, originalUri!, false, proxied, (int)originResp.StatusCode, "fallback", sw.ElapsedMilliseconds, originResp.Version.ToString());
                     return originResp;
                 }
                 catch
@@ -282,7 +282,7 @@ public sealed class HttpInterceptor : IDisposable
         var final = finalUri ?? request.RequestUri!;
         var original = originalUri ?? final;
         var statusCode = response != null ? (int)response.StatusCode : 0;
-        Log(original, final, rewritten, proxied, statusCode, error != null ? "failed" : "ok", sw.ElapsedMilliseconds);
+        Log(original, final, rewritten, proxied, statusCode, error != null ? "failed" : "ok", sw.ElapsedMilliseconds, response?.Version.ToString() ?? "");
 
         if (error != null)
             ExceptionDispatchInfo.Capture(error).Throw();
@@ -298,7 +298,7 @@ public sealed class HttpInterceptor : IDisposable
         catch { return false; }
     }
 
-    private void Log(Uri original, Uri final, bool rewritten, bool proxied, int statusCode, string result, long elapsedMs)
+    private void Log(Uri original, Uri final, bool rewritten, bool proxied, int statusCode, string result, long elapsedMs, string httpVersion = "")
     {
         try
         {
@@ -312,6 +312,7 @@ public sealed class HttpInterceptor : IDisposable
                 StatusCode = statusCode,
                 Result = result,
                 ElapsedMs = elapsedMs,
+                HttpVersion = httpVersion,
             });
         }
         catch

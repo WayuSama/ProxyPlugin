@@ -212,12 +212,13 @@ public sealed class ConfigWindow : Window, IDisposable
     {
         ImGui.Spacing();
         ImGui.TextUnformatted(Loc.T("log.header"));
-        if (!ImGui.BeginTable("##log", 5, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY))
+        if (!ImGui.BeginTable("##log", 6, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY))
             return;
 
         ImGui.TableSetupColumn(Loc.T("log.col.time"), ImGuiTableColumnFlags.WidthFixed, 64);
         ImGui.TableSetupColumn(Loc.T("log.col.url"), ImGuiTableColumnFlags.WidthStretch);
-        ImGui.TableSetupColumn(Loc.T("log.col.flags"), ImGuiTableColumnFlags.WidthFixed, 110);
+        ImGui.TableSetupColumn(Loc.T("log.col.flags"), ImGuiTableColumnFlags.WidthFixed, 80);
+        ImGui.TableSetupColumn(Loc.T("log.col.ver"), ImGuiTableColumnFlags.WidthFixed, 42);
         ImGui.TableSetupColumn(Loc.T("log.col.code"), ImGuiTableColumnFlags.WidthFixed, 56);
         ImGui.TableSetupColumn(Loc.T("log.col.ms"), ImGuiTableColumnFlags.WidthFixed, 56);
         ImGui.TableHeadersRow();
@@ -228,6 +229,7 @@ public sealed class ConfigWindow : Window, IDisposable
             ImGui.TableNextColumn(); ImGui.TextUnformatted(e.TimestampUtc.ToLocalTime().ToString("HH:mm:ss"));
             ImGui.TableNextColumn(); ImGui.TextUnformatted(e.FinalUrl);
             ImGui.TableNextColumn(); ImGui.TextUnformatted(DescribeFlags(e));
+            ImGui.TableNextColumn(); ImGui.TextUnformatted(e.HttpVersion);
             ImGui.TableNextColumn(); ImGui.TextUnformatted(e.StatusCode > 0 ? e.StatusCode.ToString() : Loc.T("log.err"));
             ImGui.TableNextColumn(); ImGui.TextUnformatted(e.ElapsedMs.ToString());
         }

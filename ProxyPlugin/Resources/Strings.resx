@@ -142,6 +142,9 @@
   <data name="log.col.ms" xml:space="preserve">
     <value>ms</value>
   </data>
+  <data name="log.col.ver" xml:space="preserve">
+    <value>Version</value>
+  </data>
   <data name="flag.rewriteProxy" xml:space="preserve">
     <value>Rewrite, Proxy</value>
   </data>

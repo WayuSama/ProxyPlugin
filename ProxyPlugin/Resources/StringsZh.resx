@@ -142,6 +142,9 @@
   <data name="log.col.ms" xml:space="preserve">
     <value>毫秒</value>
   </data>
+  <data name="log.col.ver" xml:space="preserve">
+    <value>版本</value>
+  </data>
   <data name="flag.rewriteProxy" xml:space="preserve">
     <value>重写, 代理</value>
   </data>
