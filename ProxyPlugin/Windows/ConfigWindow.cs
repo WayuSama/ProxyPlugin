@@ -172,7 +172,7 @@ public sealed class ConfigWindow : Window, IDisposable
         if (!ImGui.CollapsingHeader(Loc.T("mirror.header") + "##rulesHeader"))
             return;
 
-        if (!ImGui.BeginTable("##rules", 3,
+        if (!ImGui.BeginTable("##rules", 4,
                 ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY,
                 new Vector2(0, 140)))
             return;
@@ -180,6 +180,7 @@ public sealed class ConfigWindow : Window, IDisposable
         ImGui.TableSetupColumn(Loc.T("mirror.col.on"), ImGuiTableColumnFlags.WidthFixed, 40);
         ImGui.TableSetupColumn(Loc.T("mirror.col.match"), ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableSetupColumn(Loc.T("mirror.col.target"), ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableSetupColumn(Loc.T("mirror.col.dropquery"), ImGuiTableColumnFlags.WidthFixed, 80);
         ImGui.TableHeadersRow();
 
         var rules = _ruleset.Rules;
@@ -196,6 +197,14 @@ public sealed class ConfigWindow : Window, IDisposable
 
             ImGui.TableNextColumn(); ImGui.TextUnformatted(r.Pattern);
             ImGui.TableNextColumn(); ImGui.TextUnformatted(r.Replacement);
+
+            // DropQuery is an init-only rule property, so surface it read-only: a disabled checkbox
+            // reflects the value while making it clear the UI cannot change it.
+            ImGui.TableNextColumn();
+            bool dropQuery = r.DropQuery;
+            ImGui.BeginDisabled(true);
+            ImGui.Checkbox($"##drop{i}", ref dropQuery);
+            ImGui.EndDisabled();
         }
 
         ImGui.EndTable();

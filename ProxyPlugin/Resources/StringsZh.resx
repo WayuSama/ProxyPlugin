@@ -124,6 +124,9 @@
   <data name="mirror.col.target" xml:space="preserve">
     <value>目标</value>
   </data>
+  <data name="mirror.col.dropquery" xml:space="preserve">
+    <value>丢弃查询</value>
+  </data>
   <data name="log.header" xml:space="preserve">
     <value>最近请求</value>
   </data>
