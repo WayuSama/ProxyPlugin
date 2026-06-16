@@ -18,6 +18,9 @@ public sealed class ConfigWindow : Window, IDisposable
     private static readonly UiLanguage[] LanguageOptions =
         { UiLanguage.Auto, UiLanguage.English, UiLanguage.ChineseSimplified };
 
+    // Translucent red fill for request-log rows that ended in a transport/network failure.
+    private static readonly Vector4 ErrorRowColor = new(0.60f, 0.12f, 0.12f, 0.60f);
+
     private readonly Configuration _config;
     private readonly RequestLog _log;
     private readonly HttpInterceptor _interceptor;
@@ -226,6 +229,10 @@ public sealed class ConfigWindow : Window, IDisposable
         foreach (var e in _log.Snapshot())
         {
             ImGui.TableNextRow();
+            // Network errors never produced an HTTP response (StatusCode 0). Flag them with a red
+            // row background here rather than spamming the shared log; see HttpInterceptor.
+            if (IsNetworkError(e))
+                ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(ErrorRowColor));
             ImGui.TableNextColumn(); ImGui.TextUnformatted(e.TimestampUtc.ToLocalTime().ToString("HH:mm:ss"));
             ImGui.TableNextColumn(); ImGui.TextUnformatted(e.FinalUrl);
             ImGui.TableNextColumn(); ImGui.TextUnformatted(DescribeFlags(e));
@@ -236,6 +243,10 @@ public sealed class ConfigWindow : Window, IDisposable
 
         ImGui.EndTable();
     }
+
+    // A zero status code means no HTTP response ever came back, i.e. a transport/network failure
+    // (DNS, connect, timeout). Successful fallbacks carry the origin's real status code instead.
+    private static bool IsNetworkError(RequestLogEntry e) => e.StatusCode == 0;
 
     private static string DescribeFlags(RequestLogEntry e) => (e.Rewritten, e.Proxied) switch
     {

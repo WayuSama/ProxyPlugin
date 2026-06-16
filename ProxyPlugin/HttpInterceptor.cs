@@ -102,6 +102,22 @@ public sealed class HttpInterceptor : IDisposable
                 prefix: new HarmonyMethod(typeof(HttpInterceptor), nameof(SendSyncPrefix)));
         }
 
+        // GetAsync/PostAsync/SendAsync all hand this overload's task straight back to the caller.
+        // We observe its faults (see HttpClientSendAsyncPostfix) so a fire-and-forget network error
+        // is recorded in our request log instead of flooding the shared Dalamud log.
+        var httpClientSendAsync = AccessTools.DeclaredMethod(
+            typeof(HttpClient), "SendAsync",
+            new[] { typeof(HttpRequestMessage), typeof(HttpCompletionOption), typeof(CancellationToken) });
+        if (httpClientSendAsync != null)
+        {
+            _harmony.Patch(httpClientSendAsync,
+                postfix: new HarmonyMethod(typeof(HttpInterceptor), nameof(HttpClientSendAsyncPostfix)));
+        }
+        else
+        {
+            _logger.Info("ProxyPlugin: HttpClient.SendAsync not found; unobserved-fault suppression disabled.");
+        }
+
         if (!ForceInjectionAvailable)
             _logger.Info("ProxyPlugin: forced-proxy reflection unavailable on this runtime; running in degraded (baseline + rewrite) mode.");
     }
@@ -319,6 +335,47 @@ public sealed class HttpInterceptor : IDisposable
         {
             // diagnostics must never affect request flow
         }
+    }
+
+    // Postfix on HttpClient.SendAsync. A caller that fire-and-forgets a request never observes the
+    // returned task, so when it faults (typically a network error: DNS/connect/timeout) the finalizer
+    // escalates it to TaskScheduler.UnobservedTaskException, which Dalamud logs as a full-stack [ERR].
+    // Dalamud subscribes to that event before any plugin and logs while the fault is still unobserved,
+    // so a late SetObserved cannot stop it. Instead we attach our own observer here: observing the
+    // fault defuses the escalation while leaving the exception intact for callers that do await it.
+    public static void HttpClientSendAsyncPostfix(ref Task<HttpResponseMessage> __result)
+    {
+        var self = _active;
+        if (self == null || __result == null)
+            return;
+
+        try
+        {
+            // Master switch off: leave the runtime's default reporting untouched.
+            if (!self._settingsProvider().Enabled)
+                return;
+
+            ObserveFault(__result);
+        }
+        catch (Exception ex)
+        {
+            self._logger.Error(ex, "ProxyPlugin: HttpClient.SendAsync postfix failed.");
+        }
+    }
+
+    // Reading Task.Exception marks the fault observed (so the finalizer never escalates it) without
+    // clearing it, so an awaiting caller still sees the error. OnlyOnFaulted keeps the success path
+    // free; the continuation itself completes normally and so is never unobserved in turn.
+    private static void ObserveFault(Task task)
+    {
+        if (task.IsCompletedSuccessfully)
+            return;
+
+        task.ContinueWith(
+            static t => { _ = t.Exception; },
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 
     public void Dispose()
