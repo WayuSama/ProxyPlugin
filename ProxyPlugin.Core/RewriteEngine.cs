@@ -54,7 +54,10 @@ public static class RewriteEngine
                     Host = newHost,
                     Port = -1,
                     Path = newPath,
-                    Query = input.Query.TrimStart('?'),
+                    // Reattach the source query unless the rule maps onto a fixed asset and
+                    // opts out, in which case the original query would only point at a path
+                    // (e.g. a CSV export endpoint) the mirror does not understand.
+                    Query = rule.DropQuery ? string.Empty : input.Query.TrimStart('?'),
                     Fragment = input.Fragment.TrimStart('#'),
                 };
                 output = builder.Uri;

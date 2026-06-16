@@ -27,6 +27,15 @@ public sealed class MirrorRule
     /// </summary>
     public string Replacement { get; init; } = "";
 
+    /// <summary>
+    /// When <c>true</c>, the source request's query string is discarded instead of being
+    /// reattached to the rewritten URL. Set this for rules that collapse an entire URL onto a
+    /// single fixed asset (e.g. a Google Sheets CSV export mapped to one static file) where the
+    /// original query (<c>?tqx=out:csv&amp;sheet=...</c>) is meaningless on the mirror. Defaults
+    /// to <c>false</c> so query strings are preserved for API/path mirrors.
+    /// </summary>
+    public bool DropQuery { get; init; }
+
     public bool Enabled { get; set; } = true;
 
     /// <summary>

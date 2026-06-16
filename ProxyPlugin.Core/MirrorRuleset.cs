@@ -54,13 +54,14 @@ public sealed class MirrorRuleset
     /// TEMPLATES: replace each Replacement host with a real maintainer-operated
     /// mirror/reverse-proxy domain, then set <c>Enabled = true</c> before release. Each rule
     /// rewrites a request via a regex over <c>host/path</c>; scheme, port, query and fragment
-    /// are preserved automatically, and the text up to the first '/' in Replacement becomes the
-    /// new (mirror) host. Rules ship DISABLED so a default install never rewrites to a dead mirror.
+    /// are preserved automatically (set <c>DropQuery = true</c> to drop the source query on
+    /// rules that map onto a single fixed asset), and the text up to the first '/' in Replacement
+    /// becomes the new (mirror) host. Rules ship DISABLED so a default install never rewrites to a dead mirror.
     /// </summary>
     public static MirrorRuleset Default() => new(new List<MirrorRule>
     {
-        // new() { Id = "github-raw", Pattern = @"^raw\.githubusercontent\.com", Replacement = "raw.mirror.example.cn", Enabled = false },
-        // new() { Id = "github-release-assets", Pattern = @"^objects\.githubusercontent\.com", Replacement = "objects.mirror.example.cn", Enabled = false },
+         new() { Id = "DamageInfo-asset", Pattern = @"^docs\.google\.com\/spreadsheets\/d\/1z2skn_jokyj02Qv2GPEs6HSmAZVLiw2LbwQxkXPjiEs\/.*", Replacement = "s3test.ffxiv.wang/xlassets/pluginfiles/DamageInfoPlugin.csv", DropQuery = true, Enabled = true },
+         new() { Id = "Distance-asset", Pattern = @"^raw\.githubusercontent\.com\/PunishedPineapple\/PunishedPineapple\.github\.io\/master\/DalamudPlugins\/Distance\/Support\/AggroDistances\.dat", Replacement = "s3test.ffxiv.wang/xlassets/pluginfiles/AggroDistances.dat", DropQuery = true, Enabled = true },
         // new() { Id = "crowdin-api", Pattern = @"^api\.crowdin\.com/api/v2", Replacement = "crowdin.mirror.example.cn/api/v2", Enabled = false },
     });
 

@@ -84,6 +84,29 @@ public class MirrorRulesetTests
     }
 
     [Fact]
+    public void Default_DamageInfoRule_DropsGoogleSheetsQuery()
+    {
+        var rs = MirrorRuleset.Default();
+        var input = new Uri("https://docs.google.com/spreadsheets/d/1z2skn_jokyj02Qv2GPEs6HSmAZVLiw2LbwQxkXPjiEs/gviz/tq?tqx=out:csv&sheet=main1");
+
+        Assert.True(rs.TryRewrite(input, out var o));
+        Assert.Equal("https://s3test.ffxiv.wang/xlassets/pluginfiles/DamageInfoPlugin.csv", o.ToString());
+        Assert.Equal("", o.Query);
+    }
+
+    [Fact]
+    public void FromJson_RoundTripsDropQuery()
+    {
+        const string json = """
+        [ { "Id": "asset", "Pattern": "^h\\.com", "Replacement": "t.cn/file.csv", "DropQuery": true, "Enabled": true } ]
+        """;
+        var rs = MirrorRuleset.FromJson(json);
+        Assert.True(rs.Rules.Single().DropQuery);
+        Assert.True(rs.TryRewrite(new Uri("https://h.com/x?q=1"), out var o));
+        Assert.Equal("", o.Query);
+    }
+
+    [Fact]
     public void ApplyEnabledOverrides_NullOrEmpty_IsNoOp()
     {
         var rs = new MirrorRuleset(new[]

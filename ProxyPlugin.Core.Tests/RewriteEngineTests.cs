@@ -132,4 +132,38 @@ public class RewriteEngineTests
         var bad = new MirrorRule { Id = "bad", Pattern = "[", Replacement = "t.cn", Enabled = true };
         Assert.False(RewriteEngine.TryRewrite(new Uri("https://h.com/x"), new[] { bad }, out _));
     }
+
+    [Fact]
+    public void DropQuery_DiscardsSourceQuery()
+    {
+        var rule = new MirrorRule
+        {
+            Id = "asset", Pattern = @"^docs\.google\.com/spreadsheets/d/SHEET/.*",
+            Replacement = "mirror.cn/files/data.csv", DropQuery = true, Enabled = true,
+        };
+        var input = new Uri("https://docs.google.com/spreadsheets/d/SHEET/gviz/tq?tqx=out:csv&sheet=main1");
+        Assert.True(RewriteEngine.TryRewrite(input, new[] { rule }, out var o));
+        Assert.Equal("mirror.cn", o.Host);
+        Assert.Equal("/files/data.csv", o.AbsolutePath);
+        Assert.Equal("", o.Query);
+        Assert.DoesNotContain("?", o.ToString());
+    }
+
+    [Fact]
+    public void DropQuery_LeavesFragmentIntact()
+    {
+        var rule = new MirrorRule { Id = "asset", Pattern = @"^h\.com", Replacement = "t.cn", DropQuery = true, Enabled = true };
+        var input = new Uri("https://h.com/x?q=1#frag");
+        Assert.True(RewriteEngine.TryRewrite(input, new[] { rule }, out var o));
+        Assert.Equal("", o.Query);
+        Assert.Equal("#frag", o.Fragment);
+    }
+
+    [Fact]
+    public void DropQueryDefault_PreservesSourceQuery()
+    {
+        var rule = new MirrorRule { Id = "p", Pattern = @"^h\.com", Replacement = "t.cn", Enabled = true };
+        Assert.True(RewriteEngine.TryRewrite(new Uri("https://h.com/x?q=1"), new[] { rule }, out var o));
+        Assert.Equal("?q=1", o.Query);
+    }
 }
