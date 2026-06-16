@@ -6,6 +6,8 @@
   "Description": "强制进程内插件的 HTTP/WebSocket 流量通过系统/手动代理，或将白名单中的静态资源 URL 重写为内置镜像，并在失败时自动回退到源站。命令：/proxyplugin。",
   "ApplicableVersion": "any",
   "LoadPriority": 1000,
+  "LoadSync": true,
+  "LoadRequiredState": 2,
   "Tags": [
     "proxy",
     "mirror",
