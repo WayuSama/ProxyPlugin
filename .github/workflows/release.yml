@@ -1,0 +1,159 @@
+# Build the plugin and refresh the Dalamud plugin-repository manifest (repo.json).
+#
+# How to cut a release:
+#   1. Bump <Version> in ProxyPlugin/ProxyPlugin.csproj (four-part, e.g. 0.4.0.0).
+#   2. git tag v0.4.0.0 && git push origin v0.4.0.0
+# The tag push builds the plugin, publishes a GitHub Release carrying latest.zip,
+# then regenerates repo.json on master pointing at that release.
+#
+# You can also trigger it manually (Actions -> Run workflow); leave "version"
+# blank to reuse <Version> from the csproj, or type one to override it.
+#
+# Users add this repository to Dalamud via the raw manifest URL:
+#   https://raw.githubusercontent.com/Loskh/ProxyPlugin/master/repo.json
+
+name: Build & Publish Plugin
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Plugin version, e.g. 0.4.0.0 (blank = use <Version> from csproj)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  # Dalamud dev distribution the plugin compiles against. Swap for the CN distrib if required.
+  DALAMUD_DISTRIB_URL: "https://goatcorp.github.io/dalamud-distrib/latest.zip"
+  PLUGIN_PROJECT: "ProxyPlugin/ProxyPlugin.csproj"
+  TEST_PROJECT: "ProxyPlugin.Core.Tests/ProxyPlugin.Core.Tests.csproj"
+  PLUGIN_INTERNAL_NAME: "ProxyPlugin"
+  REPO_MANIFEST: "repo.json"
+
+jobs:
+  build-and-publish:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version and tag
+        id: ver
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -like 'refs/tags/*') {
+            $tag = $env:GITHUB_REF -replace '^refs/tags/', ''
+          }
+          else {
+            $inputVersion = '${{ github.event.inputs.version }}'
+            if ([string]::IsNullOrWhiteSpace($inputVersion)) {
+              [xml]$csproj = Get-Content $env:PLUGIN_PROJECT
+              $v = (($csproj.Project.PropertyGroup.Version) | Where-Object { $_ } | Select-Object -First 1)
+              $tag = "v$v"
+            }
+            else {
+              $tag = "v$($inputVersion.TrimStart('v'))"
+            }
+          }
+          $version = $tag -replace '^v', ''
+          if ([string]::IsNullOrWhiteSpace($version)) { throw "Could not resolve a version." }
+          "tag=$tag"         | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Resolved tag='$tag' version='$version'"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download Dalamud
+        shell: pwsh
+        run: |
+          $dir = "$env:AppData\XIVLauncher\addon\Hooks\dev"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Invoke-WebRequest -Uri $env:DALAMUD_DISTRIB_URL -OutFile dalamud.zip
+          Expand-Archive -Force dalamud.zip $dir
+
+      - name: Build & package
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          dotnet build $env:PLUGIN_PROJECT -c Release `
+            -p:Version=$v -p:AssemblyVersion=$v -p:FileVersion=$v
+          if ($LASTEXITCODE -ne 0) { throw "Plugin build failed" }
+
+      - name: Test
+        shell: pwsh
+        run: |
+          dotnet test $env:TEST_PROJECT -c Release
+          if ($LASTEXITCODE -ne 0) { throw "Unit tests failed" }
+
+      - name: Locate packaged artifacts
+        id: artifacts
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path ProxyPlugin/bin -Recurse -Filter latest.zip -ErrorAction SilentlyContinue |
+                 Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $zip) { throw "latest.zip was not produced by DalamudPackager" }
+          $manifest = Join-Path $zip.Directory.FullName "$($env:PLUGIN_INTERNAL_NAME).json"
+          if (-not (Test-Path $manifest)) { throw "Packaged manifest not found: $manifest" }
+          $zipRel      = (Resolve-Path -Relative $zip.FullName) -replace '\\', '/'
+          $manifestRel = (Resolve-Path -Relative $manifest)     -replace '\\', '/'
+          "zip=$zipRel"           | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "manifest=$manifestRel" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "zip=$zipRel"
+          Write-Host "manifest=$manifestRel"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
+          files: ${{ steps.artifacts.outputs.zip }}
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+
+      - name: Regenerate repo.json
+        shell: pwsh
+        run: |
+          $tag      = "${{ steps.ver.outputs.tag }}"
+          $repoBase = "https://github.com/${{ github.repository }}"
+          $download = "$repoBase/releases/download/$tag/latest.zip"
+
+          $manifest = Get-Content "${{ steps.artifacts.outputs.manifest }}" -Raw | ConvertFrom-Json
+          $manifest | Add-Member -NotePropertyName RepoUrl             -NotePropertyValue $repoBase -Force
+          $manifest | Add-Member -NotePropertyName DownloadLinkInstall -NotePropertyValue $download -Force
+          $manifest | Add-Member -NotePropertyName DownloadLinkUpdate  -NotePropertyValue $download -Force
+          $manifest | Add-Member -NotePropertyName DownloadLinkTesting -NotePropertyValue $download -Force
+
+          # A Dalamud third-party repository is a JSON array of plugin manifests.
+          # -InputObject keeps the single entry wrapped in an array instead of unrolling it.
+          $json = ConvertTo-Json -InputObject @($manifest) -Depth 32
+
+          git fetch origin master
+          git checkout -B master FETCH_HEAD
+          Set-Content -Path $env:REPO_MANIFEST -Value $json -Encoding utf8NoBOM
+
+      - name: Commit & push updated manifest
+        shell: pwsh
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add $env:REPO_MANIFEST
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "chore(repo): update plugin manifest to ${{ steps.ver.outputs.tag }}"
+            git push origin master
+          }
+          else {
+            Write-Host "$env:REPO_MANIFEST unchanged; nothing to commit."
+          }
