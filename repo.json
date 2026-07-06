@@ -1,0 +1,26 @@
+[
+  {
+    "Author": "Loskh",
+    "Name": "ProxyPlugin",
+    "InternalName": "ProxyPlugin",
+    "AssemblyVersion": "0.3.0.0",
+    "Description": "强制进程内插件的 HTTP/WebSocket 流量通过系统/手动代理，或将白名单中的静态资源 URL 重写为内置镜像，并在失败时自动回退到源站。命令：/proxyplugin。",
+    "ApplicableVersion": "any",
+    "Tags": [
+      "proxy",
+      "mirror",
+      "network"
+    ],
+    "DalamudApiLevel": 15,
+    "LoadRequiredState": 2,
+    "LoadSync": true,
+    "CanUnloadAsync": false,
+    "LoadPriority": 1000,
+    "Punchline": "通过你的代理转发其他插件的流量，或借助镜像加速。",
+    "AcceptsFeedback": true,
+    "RepoUrl": "https://github.com/Loskh/ProxyPlugin",
+    "DownloadLinkInstall": "https://github.com/Loskh/ProxyPlugin/releases/download/v0.3.0.0/latest.zip",
+    "DownloadLinkUpdate": "https://github.com/Loskh/ProxyPlugin/releases/download/v0.3.0.0/latest.zip",
+    "DownloadLinkTesting": "https://github.com/Loskh/ProxyPlugin/releases/download/v0.3.0.0/latest.zip"
+  }
+]
