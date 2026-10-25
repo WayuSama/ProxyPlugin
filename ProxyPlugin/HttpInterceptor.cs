@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
-using HarmonyLib;
 using ProxyPlugin.Core;
 
 namespace ProxyPlugin;
@@ -20,8 +19,6 @@ namespace ProxyPlugin;
 /// </summary>
 public sealed class HttpInterceptor : IDisposable
 {
-    private const string HarmonyId = "ProxyPlugin.HttpInterceptor";
-
     // Marks the rewritten origin so the fallback path can restore it.
     private static readonly HttpRequestOptionsKey<Uri> OriginalUriKey = new("ProxyPlugin.OriginalUri");
 
@@ -31,7 +28,7 @@ public sealed class HttpInterceptor : IDisposable
 
     private static volatile HttpInterceptor? _active;
 
-    private readonly Harmony _harmony = new(HarmonyId);
+    private readonly HarmonyRuntime _harmony;
     private readonly DynamicProxy _proxy;
     private readonly MirrorRuleset _ruleset;
     private readonly MirrorHealth _health;
@@ -54,8 +51,9 @@ public sealed class HttpInterceptor : IDisposable
         MirrorHealth health,
         RequestLog log,
         Func<ProxySettings> settingsProvider,
-        IInterceptorLog logger)
+        IInterceptorLog logger, HarmonyRuntime harmony)
     {
+        _harmony = harmony;
         _proxy = proxy;
         _ruleset = ruleset;
         _health = health;
@@ -73,21 +71,38 @@ public sealed class HttpInterceptor : IDisposable
 
     public void Install()
     {
+        // MonoMod emits helper assemblies. Resolve their Harmony types in the same
+        // non-collectible context as Harmony, not the caller's plugin context.
+        using var scope = _harmony.EnterContext();
+        try
+        {
+            InstallPatches();
+        }
+        catch
+        {
+            _active = null;
+            _harmony.Unpatch();
+            throw;
+        }
+    }
+
+    private void InstallPatches()
+    {
         ResolveReflection();
         _active = this;
 
-        var sendAsync = AccessTools.DeclaredMethod(
+        var sendAsync = DeclaredMethod(
             typeof(SocketsHttpHandler), "SendAsync",
             new[] { typeof(HttpRequestMessage), typeof(CancellationToken) });
-        var send = AccessTools.DeclaredMethod(
+        var send = DeclaredMethod(
             typeof(SocketsHttpHandler), "Send",
             new[] { typeof(HttpRequestMessage), typeof(CancellationToken) });
 
         if (sendAsync != null)
         {
             _harmony.Patch(sendAsync,
-                prefix: new HarmonyMethod(typeof(HttpInterceptor), nameof(SendAsyncPrefix)),
-                postfix: new HarmonyMethod(typeof(HttpInterceptor), nameof(SendAsyncPostfix)));
+                prefix: PatchMethod(nameof(SendAsyncPrefix)),
+                postfix: PatchMethod(nameof(SendAsyncPostfix)));
         }
         else
         {
@@ -99,19 +114,19 @@ public sealed class HttpInterceptor : IDisposable
         if (send != null)
         {
             _harmony.Patch(send,
-                prefix: new HarmonyMethod(typeof(HttpInterceptor), nameof(SendSyncPrefix)));
+                prefix: PatchMethod(nameof(SendSyncPrefix)));
         }
 
         // GetAsync/PostAsync/SendAsync all hand this overload's task straight back to the caller.
         // We observe its faults (see HttpClientSendAsyncPostfix) so a fire-and-forget network error
         // is recorded in our request log instead of flooding the shared Dalamud log.
-        var httpClientSendAsync = AccessTools.DeclaredMethod(
+        var httpClientSendAsync = DeclaredMethod(
             typeof(HttpClient), "SendAsync",
             new[] { typeof(HttpRequestMessage), typeof(HttpCompletionOption), typeof(CancellationToken) });
         if (httpClientSendAsync != null)
         {
             _harmony.Patch(httpClientSendAsync,
-                postfix: new HarmonyMethod(typeof(HttpInterceptor), nameof(HttpClientSendAsyncPostfix)));
+                postfix: PatchMethod(nameof(HttpClientSendAsyncPostfix)));
         }
         else
         {
@@ -121,6 +136,11 @@ public sealed class HttpInterceptor : IDisposable
         if (!ForceInjectionAvailable)
             _logger.Info("ProxyPlugin: forced-proxy reflection unavailable on this runtime; running in degraded (baseline + rewrite) mode.");
     }
+
+    private static MethodInfo? DeclaredMethod(Type type, string name, Type[] arguments)
+        => type.GetMethod(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly, null, arguments, null);
+
+    private static MethodInfo PatchMethod(string name) => typeof(HttpInterceptor).GetMethod(name)!;
 
     private void ResolveReflection()
     {
@@ -380,9 +400,10 @@ public sealed class HttpInterceptor : IDisposable
 
     public void Dispose()
     {
+        using var scope = _harmony.EnterContext();
         // Stop accepting new interception first so no new fallback can start.
         _active = null;
-        try { _harmony.UnpatchAll(HarmonyId); }
+        try { _harmony.Unpatch(); }
         catch (Exception ex) { _logger.Error(ex, "ProxyPlugin: Harmony unpatch failed."); }
 
         // Best-effort drain of in-flight fallbacks so disposing the client does not surface

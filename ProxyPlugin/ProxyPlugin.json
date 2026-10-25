@@ -1,5 +1,5 @@
 {
-  "Author": "Loskh",
+  "Author": "Loskh / WayuSama",
   "Name": "ProxyPlugin",
   "InternalName": "ProxyPlugin",
   "Punchline": "通过你的代理转发其他插件的流量，或借助镜像加速。",
@@ -12,5 +12,7 @@
     "proxy",
     "mirror",
     "network"
-  ]
+  ],
+  "RepoUrl": "https://github.com/WayuSama/ProxyPlugin",
+  "Changelog": "修复卫月隔离加载上下文中的 Harmony/MonoMod 类型冲突；初始化失败时清理拦截并恢复代理。基于原版 0.3.0.0，修改序号 01。"
 }

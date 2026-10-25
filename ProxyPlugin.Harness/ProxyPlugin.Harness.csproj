@@ -13,5 +13,6 @@
   <ItemGroup>
     <!-- Reuse the real interceptor code, compiled against NuGet Harmony for out-of-game testing -->
     <Compile Include="..\ProxyPlugin\HttpInterceptor.cs" />
+    <Compile Include="..\ProxyPlugin\HarmonyRuntime.cs" />
   </ItemGroup>
 </Project>

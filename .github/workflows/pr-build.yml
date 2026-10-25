@@ -35,6 +35,10 @@ jobs:
       - name: Test
         run: dotnet test ProxyPlugin.Core.Tests/ProxyPlugin.Core.Tests.csproj --configuration Release
 
+      - name: HTTP and load context regression tests
+        shell: pwsh
+        run: ./scripts/test-interception.ps1
+
       - name: Store artifacts
         uses: actions/upload-artifact@v4
         with:

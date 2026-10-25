@@ -38,9 +38,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public Plugin()
     {
-        // Must run before any Harmony type is touched (i.e. before HttpInterceptor below): hosts
-        // 0Harmony in the non-collectible Default ALC so MonoMod can operate. See HarmonyLoader.
-        HarmonyLoader.EnsureLoaded(PluginInterface.AssemblyLocation.DirectoryName!);
+        var harmony = HarmonyRuntime.FromHost(typeof(IDalamudPlugin).Assembly, "ProxyPlugin.HttpInterceptor");
 
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         Loc.Apply(Configuration.Language, PluginInterface.UiLanguage);
@@ -58,8 +56,19 @@ public sealed class Plugin : IDalamudPlugin
         WebRequest.DefaultWebProxy = _proxy;
 
         var logger = new DalamudInterceptorLog(Log);
-        _interceptor = new HttpInterceptor(_proxy, _ruleset, _health, _requestLog, () => Configuration.Settings, logger);
-        _interceptor.Install();
+        _interceptor = new HttpInterceptor(_proxy, _ruleset, _health, _requestLog, () => Configuration.Settings, logger, harmony);
+        try
+        {
+            _interceptor.Install();
+        }
+        catch
+        {
+            _proxy.Shutdown();
+            HttpClient.DefaultProxy = _previousDefaultProxy;
+            WebRequest.DefaultWebProxy = _previousWebRequestProxy;
+            _interceptor.Dispose();
+            throw;
+        }
 
         _watcher = new SystemProxyWatcher(_systemReader.Invalidate, logger);
         _watcher.Start();

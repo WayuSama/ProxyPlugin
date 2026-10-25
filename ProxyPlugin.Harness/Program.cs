@@ -4,11 +4,13 @@ using System.Text;
 using ProxyPlugin;
 using ProxyPlugin.Core;
 
-internal static class Program
+public static class Program
 {
     private static int _failures;
 
-    private static async Task<int> Main()
+    private static Task<int> Main() => Run(typeof(Program).Assembly);
+
+    public static async Task<int> Run(System.Reflection.Assembly hostAssembly)
     {
         const int originPort = 18080;
         var originPrefix = $"http://localhost:{originPort}/";
@@ -26,7 +28,7 @@ internal static class Program
         var health = new MirrorHealth(new SystemClock(), failureThreshold: 5, cooldown: TimeSpan.FromSeconds(2));
         var log = new RequestLog();
         var proxy = new DynamicProxy(() => settings, new NullSystemProxyReader());
-        var interceptor = new HttpInterceptor(proxy, ruleset, health, log, () => settings, new ConsoleLog());
+        var interceptor = new HttpInterceptor(proxy, ruleset, health, log, () => settings, new ConsoleLog(), HarmonyRuntime.FromHost(hostAssembly, "ProxyPlugin.HttpInterceptor"));
 
         interceptor.Install();
         try
@@ -89,6 +91,19 @@ internal static class Program
         finally
         {
             interceptor.Dispose();
+        }
+
+        var afterDispose = log.Snapshot().Count;
+        using (var client = new HttpClient())
+            Check("E: requests still work after unpatch", await client.GetStringAsync(originPrefix) == "ORIGIN");
+        Check("E: disposed interceptor no longer logs requests", log.Snapshot().Count == afterDispose);
+
+        using (var reloaded = new HttpInterceptor(proxy, ruleset, health, log, () => settings, new ConsoleLog(), HarmonyRuntime.FromHost(hostAssembly, "ProxyPlugin.HttpInterceptor")))
+        {
+            reloaded.Install();
+            using var client = new HttpClient();
+            Check("F: reload restores interception", await client.GetStringAsync(originPrefix) == "ORIGIN");
+            Check("F: reload logs requests", log.Snapshot().Count > afterDispose);
         }
 
         Console.WriteLine(_failures == 0

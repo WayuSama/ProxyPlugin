@@ -1,78 +1,27 @@
-> ⚠️ **Don't click Fork!**
-> 
-> This is a GitHub Template repo. If you want to use this for a plugin, [use this template][new-repo] to make a new repo!
->
-> ![image](https://github.com/goatcorp/SamplePlugin/assets/16760685/d9732094-e1ed-4769-a70b-58ed2b92580c)
+# ProxyPlugin
 
-# SamplePlugin
+为卫月插件提供系统代理、手动代理及静态资源镜像加速。输入 `/proxyplugin` 打开设置，`/proxyplugin diag` 打开网络诊断。
 
-[![Use This Template badge](https://img.shields.io/badge/Use%20This%20Template-0?logo=github&labelColor=grey)][new-repo]
+源码：[WayuSama/ProxyPlugin](https://github.com/WayuSama/ProxyPlugin)，基于 Loskh/ProxyPlugin，保留 AGPL-3.0-or-later 许可。
 
+在卫月「设置 → 测试版 → 自定义插件仓库」加入与 Pulsar 相同的安装源：
 
-Simple example plugin for Dalamud.
+```text
+https://raw.githubusercontent.com/WayuSama/dalamud-plugins/refs/heads/main/pluginmaster.json
+```
 
-This is not designed to be the simplest possible example, but it is also not designed to cover everything you might want to do. For more detailed questions, come ask in [the Discord](https://discord.gg/holdshift).
+刷新插件列表，搜索 `ProxyPlugin` 安装。旧版用户可先卸载旧插件，再从此源安装，原有配置会保留。
 
-## Main Points
+当前版本 `0.3.0.1`（基于原版 `0.3.0.0`，修改序号 01）。修复 Harmony/MonoMod 在卫月隔离加载环境中的类型冲突，并在初始化失败时恢复代理、撤销部分补丁。
 
-* Simple functional plugin
-  * Slash command
-  * Main UI
-  * Settings UI
-  * Image loading
-  * Plugin json
-* Simple, slightly-improved plugin configuration handling
-* Project organization
-  * Copies all necessary plugin files to the output directory
-    * Does not copy dependencies that are provided by dalamud
-    * Output directory can be zipped directly and have exactly what is required
-  * Hides data files from visual studio to reduce clutter
-    * Also allows having data files in different paths than VS would usually allow if done in the IDE directly
+本地加载请使用 Release 中的完整 `ProxyPlugin.zip`，或构建产物的完整目录；不再需要额外的 `libs/0Harmony.dll`。
 
+构建需要 .NET 10 SDK、Dalamud API 15，通过 `DALAMUD_HOME` 指定卫月依赖目录：
 
-The intention is less that any of this is used directly in other projects, and more to show how similar things can be done.
+```powershell
+dotnet build ProxyPlugin/ProxyPlugin.csproj -c Release
+dotnet test ProxyPlugin.Core.Tests -c Release
+./scripts/test-interception.ps1
+```
 
-## How To Use
-
-### Getting Started
-
-To begin, [clone this template repository][new-repo] to your own GitHub account. This will automatically bring in everything you need to get a jumpstart on development. You do not need to fork this repository unless you intend to contribute modifications to it.
-
-Be sure to also check out the [Dalamud Developer Docs][dalamud-docs] for helpful information about building your own plugin. The Developer Docs includes helpful information about all sorts of things, including [how to submit][submit] your newly-created plugin to the official repository. Assuming you use this template repository, the provided project build configuration and license are already chosen to make everything a breeze.
-
-[new-repo]: https://github.com/new?template_name=SamplePlugin&template_owner=goatcorp
-[dalamud-docs]: https://dalamud.dev
-[submit]: https://dalamud.dev/plugin-publishing/submission
-
-### Prerequisites
-
-SamplePlugin assumes all the following prerequisites are met:
-
-* XIVLauncher, FINAL FANTASY XIV, and Dalamud have all been installed and the game has been run with Dalamud at least once.
-* XIVLauncher is installed to its default directories and configurations.
-  * If a custom path is required for Dalamud's dev directory, it must be set with the `DALAMUD_HOME` environment variable.
-* A .NET Core 8 SDK has been installed and configured, or is otherwise available. (In most cases, the IDE will take care of this.)
-
-### Building
-
-1. Open up `SamplePlugin.sln` in your C# editor of choice (likely [Visual Studio](https://visualstudio.microsoft.com) or [JetBrains Rider](https://www.jetbrains.com/rider/)).
-2. Build the solution. By default, this will build a `Debug` build, but you can switch to `Release` in your IDE.
-3. The resulting plugin can be found at `SamplePlugin/bin/x64/Debug/SamplePlugin.dll` (or `Release` if appropriate.)
-
-### Activating in-game
-
-1. Launch the game and use `/xlsettings` in chat or `xlsettings` in the Dalamud Console to open up the Dalamud settings.
-    * In here, go to `Experimental`, and add the full path to the `SamplePlugin.dll` to the list of Dev Plugin Locations.
-2. Next, use `/xlplugins` (chat) or `xlplugins` (console) to open up the Plugin Installer.
-    * In here, go to `Dev Tools > Installed Dev Plugins`, and the `SamplePlugin` should be visible. Enable it.
-3. You should now be able to use `/pmycommand` (chat) or `pmycommand` (console)!
-
-Note that you only need to add it to the Dev Plugin Locations once (Step 1); it is preserved afterwards. You can disable, enable, or load your plugin on startup through the Plugin Installer.
-
-### Reconfiguring for your own uses
-
-Replace all references to `SamplePlugin` in all the files and filenames with your desired name, then start building the plugin of your dreams. You'll figure it out 😁
-
-Dalamud will load the JSON file (by default, `SamplePlugin/SamplePlugin.json`) next to your DLL and use it for metadata, including the description for your plugin in the Plugin Installer. Make sure to update this with information relevant to _your_ plugin!
-
-All participation in this repository is governed by our [Code of Conduct](https://dalamud.dev/code-of-conduct). If you used AI tooling at any point, review the [AI Usage Policy](https://dalamud.dev/plugin-publishing/ai-policy) and disclose your level of AI use. Entirely AI-generated submissions will be rejected, and undisclosed AI use may result in a ban.
+发布时创建与项目版本一致的 `v四段版本号` 标签。只读工作流会构建、测试并生成 `ProxyPlugin.zip` 和兼容索引 `repo.json` 作为构建产物，再将它们上传至 GitHub Release。正式安装源独立维护在 [WayuSama/dalamud-plugins](https://github.com/WayuSama/dalamud-plugins)，将新版本的 `repo.json` 条目合入其 `pluginmaster.json`，保留其他插件。
