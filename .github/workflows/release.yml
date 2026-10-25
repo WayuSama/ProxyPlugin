@@ -42,19 +42,7 @@ jobs:
         run: ./scripts/test-interception.ps1
       - name: Prepare release
         shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item ProxyPlugin/bin/Release/ProxyPlugin/latest.zip dist/ProxyPlugin.zip
-          ./scripts/make-repo.ps1 -ManifestPath ProxyPlugin/bin/Release/ProxyPlugin/ProxyPlugin.json -OutputPath dist/repo.json -Repository '${{ github.repository }}'
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          $zip = [IO.Compression.ZipFile]::OpenRead('dist/ProxyPlugin.zip')
-          try {
-            $names = @($zip.Entries.FullName)
-            foreach ($required in 'ProxyPlugin.dll', 'ProxyPlugin.Core.dll', 'ProxyPlugin.json', 'ProxyPlugin.deps.json') {
-              if ($required -notin $names) { throw "Package is missing $required" }
-            }
-            if ($names -match '0Harmony|MonoMod') { throw 'Package must use host Harmony' }
-          } finally { $zip.Dispose() }
+        run: ./scripts/prepare-release.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: ProxyPlugin

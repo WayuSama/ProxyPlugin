@@ -3,7 +3,7 @@
     "Author": "Loskh / WayuSama",
     "Name": "ProxyPlugin",
     "InternalName": "ProxyPlugin",
-    "AssemblyVersion": "0.3.0.1",
+    "AssemblyVersion": "0.3.0.01",
     "Description": "强制进程内插件的 HTTP/WebSocket 流量通过系统/手动代理，或将白名单中的静态资源 URL 重写为内置镜像，并在失败时自动回退到源站。命令：/proxyplugin。",
     "ApplicableVersion": "any",
     "Tags": [
@@ -20,11 +20,11 @@
     "Changelog": "修复卫月隔离加载上下文中的 Harmony/MonoMod 类型冲突；初始化失败时清理拦截并恢复代理。基于原版 0.3.0.0，修改序号 01。",
     "AcceptsFeedback": true,
     "RepoUrl": "https://github.com/WayuSama/ProxyPlugin",
-    "DownloadLinkInstall": "https://github.com/WayuSama/ProxyPlugin/releases/download/v0.3.0.1/ProxyPlugin.zip",
-    "DownloadLinkUpdate": "https://github.com/WayuSama/ProxyPlugin/releases/download/v0.3.0.1/ProxyPlugin.zip",
-    "DownloadLinkTesting": "https://github.com/WayuSama/ProxyPlugin/releases/download/v0.3.0.1/ProxyPlugin.zip",
-    "TestingAssemblyVersion": "0.3.0.1",
+    "DownloadLinkInstall": "https://github.com/WayuSama/ProxyPlugin/releases/download/v0.3.0.01/ProxyPlugin.zip",
+    "DownloadLinkUpdate": "https://github.com/WayuSama/ProxyPlugin/releases/download/v0.3.0.01/ProxyPlugin.zip",
+    "DownloadLinkTesting": "https://github.com/WayuSama/ProxyPlugin/releases/download/v0.3.0.01/ProxyPlugin.zip",
+    "TestingAssemblyVersion": "0.3.0.01",
     "TestingDalamudApiLevel": 15,
-    "LastUpdate": 1792935112
+    "LastUpdate": 1792935688
   }
 ]

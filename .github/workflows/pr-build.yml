@@ -39,10 +39,14 @@ jobs:
         shell: pwsh
         run: ./scripts/test-interception.ps1
 
+      - name: Prepare release
+        shell: pwsh
+        run: ./scripts/prepare-release.ps1
+
       - name: Store artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ProxyPlugin
-          path: ProxyPlugin/bin/**/ProxyPlugin/latest.zip
+          path: dist/*
           if-no-files-found: error
           retention-days: 5
