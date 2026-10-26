@@ -7,12 +7,12 @@
   "ApplicableVersion": "any",
   "LoadPriority": 1000,
   "LoadSync": true,
-  "LoadRequiredState": 2,
+  "LoadRequiredState": 0,
   "Tags": [
     "proxy",
     "mirror",
     "network"
   ],
   "RepoUrl": "https://github.com/WayuSama/ProxyPlugin",
-  "Changelog": "修复卫月隔离加载上下文中的 Harmony/MonoMod 类型冲突；初始化失败时清理拦截并恢复代理。基于原版 0.3.0.0，修改序号 01。"
+  "Changelog": "调整启动顺序：在界面可用阶段同步加载，优先级 1000，晚于 Daily Routines 的 10000，避免提前初始化拦截影响 DR 启动。保留 Harmony 加载修复。基于原版 0.3.0.0，修改序号 02。"
 }
